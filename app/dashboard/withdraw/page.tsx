@@ -211,7 +211,6 @@ function WithdrawalPageContent() {
         amount: withdrawalData.amount,
         currency: withdrawalData.currency,
         walletId: withdrawalData.walletId,
-        bankAccountId: withdrawalData.bankAccountId,
         method: withdrawalData.walletId ? 'crypto' : 'bank_transfer'
       };
       
@@ -270,8 +269,6 @@ function WithdrawalPageContent() {
         
         if (pendingWithdrawal.walletId) {
           withdrawalPayload.walletId = pendingWithdrawal.walletId;
-        } else if (pendingWithdrawal.bankAccountId) {
-          withdrawalPayload.bankAccountId = pendingWithdrawal.bankAccountId;
         }
         
         console.log('[v0] Processing verified withdrawal:', withdrawalPayload);
@@ -556,11 +553,11 @@ function WithdrawalPageContent() {
                 {wallets.length > 0 && withdrawalData.currency === 'USD' && (
                   <div 
                     className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                      withdrawalData.walletId && !withdrawalData.bankAccountId
+                      withdrawalData.walletId
                         ? 'border-primary bg-primary/5' 
                         : 'border-border hover:border-primary hover:bg-primary/2'
                     }`} 
-                    onClick={() => setWithdrawalData(prev => ({ ...prev, walletId: wallets[0]._id, bankAccountId: undefined }))}
+                    onClick={() => setWithdrawalData(prev => ({ ...prev, walletId: wallets[0]._id }))}
                   >
                     <div className="flex items-center gap-3">
                       <div className="text-2xl">💰</div>
@@ -568,7 +565,7 @@ function WithdrawalPageContent() {
                         <p className="font-semibold text-foreground">Crypto Wallet (USD)</p>
                         <p className="text-xs text-muted-foreground">Bitcoin, Ethereum, USDT, USDC</p>
                       </div>
-                      {withdrawalData.walletId && !withdrawalData.bankAccountId && (
+                      {withdrawalData.walletId && (
                         <Check className="text-primary" size={20} />
                       )}
                     </div>
