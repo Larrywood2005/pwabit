@@ -92,7 +92,7 @@ export function RealtimeBalanceCard({ onWithdrawClick, onPowaUpClick }: Realtime
 
   // Socket.io connection for real-time updates
   useEffect(() => {
-    if (!user?._id) return;
+    if (!user?.id) return;
 
     const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
     
@@ -107,7 +107,7 @@ export function RealtimeBalanceCard({ onWithdrawClick, onPowaUpClick }: Realtime
 
       socketRef.current.on('connect', () => {
         setIsConnected(true);
-        socketRef.current?.emit('join', user._id);
+        socketRef.current?.emit('join', user.id);
       });
 
       socketRef.current.on('disconnect', () => {
@@ -134,12 +134,12 @@ export function RealtimeBalanceCard({ onWithdrawClick, onPowaUpClick }: Realtime
 
     return () => {
       if (socketRef.current) {
-        socketRef.current.emit('leave', user._id);
+        socketRef.current.emit('leave', user.id);
         socketRef.current.disconnect();
         socketRef.current = null;
       }
     };
-  }, [user?._id, fetchBalanceData]);
+  }, [user?.id, fetchBalanceData]);
 
   // Initial fetch and polling fallback every 10 seconds
   useEffect(() => {

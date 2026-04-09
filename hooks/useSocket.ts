@@ -52,8 +52,8 @@ export const useSocket = (options: UseSocketOptions = {}) => {
       setConnectionError(null);
 
       // Join user-specific room
-      if (user?._id) {
-        socketRef.current?.emit('join', user._id);
+      if (user?.id) {
+        socketRef.current?.emit('join', user.id);
       }
     });
 
@@ -85,36 +85,36 @@ export const useSocket = (options: UseSocketOptions = {}) => {
       console.log('[Socket] Transaction updated:', data);
       options.onTransactionUpdated?.(data);
     });
-  }, [user?._id, options]);
+  }, [user?.id, options]);
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {
-      if (user?._id) {
-        socketRef.current.emit('leave', user._id);
+      if (user?.id) {
+        socketRef.current.emit('leave', user.id);
       }
       socketRef.current.disconnect();
       socketRef.current = null;
       setIsConnected(false);
     }
-  }, [user?._id]);
+  }, [user?.id]);
 
   // Auto-connect when user is authenticated
   useEffect(() => {
-    if (user?._id) {
+    if (user?.id) {
       connect();
     }
 
     return () => {
       disconnect();
     };
-  }, [user?._id, connect, disconnect]);
+  }, [user?.id, connect, disconnect]);
 
   // Re-join room when user changes
   useEffect(() => {
-    if (isConnected && user?._id && socketRef.current) {
-      socketRef.current.emit('join', user._id);
+    if (isConnected && user?.id && socketRef.current) {
+      socketRef.current.emit('join', user.id);
     }
-  }, [isConnected, user?._id]);
+  }, [isConnected, user?.id]);
 
   return {
     socket: socketRef.current,

@@ -135,7 +135,7 @@ export function useRealTimeBalance(): UseRealTimeBalanceReturn {
 
   // Setup Socket.io connection for real-time updates
   useEffect(() => {
-    if (!user?._id) return;
+    if (!user?.id) return;
 
     const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
     
@@ -152,7 +152,7 @@ export function useRealTimeBalance(): UseRealTimeBalanceReturn {
       socketRef.current.on('connect', () => {
         console.log('[useRealTimeBalance] Socket connected');
         setIsConnected(true);
-        socketRef.current?.emit('join', user._id);
+        socketRef.current?.emit('join', user.id);
       });
 
       socketRef.current.on('disconnect', () => {
@@ -189,12 +189,12 @@ export function useRealTimeBalance(): UseRealTimeBalanceReturn {
 
     return () => {
       if (socketRef.current) {
-        socketRef.current.emit('leave', user._id);
+        socketRef.current.emit('leave', user.id);
         socketRef.current.disconnect();
         socketRef.current = null;
       }
     };
-  }, [user?._id, fetchBalance]);
+  }, [user?.id, fetchBalance]);
 
   // Initial fetch and polling setup with 10-second intervals as fallback
   useEffect(() => {
