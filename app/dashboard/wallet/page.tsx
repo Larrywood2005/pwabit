@@ -278,9 +278,9 @@ export default function WalletPage() {
                               : 'bg-red-500/20'
                           }`}>
                             {tx.type === 'deposit' ? (
-                              <ArrowDownLeft className={tx.type === 'deposit' ? 'text-green-600' : 'text-red-600'} size={20} />
+                              <ArrowDownLeft className='text-green-600' size={20} />
                             ) : (
-                              <ArrowUpRight className={tx.type === 'deposit' ? 'text-green-600' : 'text-red-600'} size={20} />
+                              <ArrowUpRight className='text-red-600' size={20} />
                             )}
                           </div>
                           <div>
