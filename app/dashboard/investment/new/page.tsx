@@ -18,13 +18,18 @@ interface Package {
   popular?: boolean;
 }
 
-interface WalletInfo {
-  usdtErc20Address?: string;
-  ethereumAddress?: string;
-  solAddress?: string;
+interface WalletNetwork {
+  network: string;
+  address: string;
 }
 
-const DEPOSIT_WALLETS = {
+interface WalletInfo {
+  usdtErc20?: WalletNetwork;
+  ethereum?: WalletNetwork;
+  sol?: WalletNetwork;
+}
+
+const DEPOSIT_WALLETS: WalletInfo = {
   usdtErc20: {
     network: 'USDT ERC20',
     address: '0x36D75f7d70689701194F2BBdc3A930d35169c2c7'
