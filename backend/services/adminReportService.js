@@ -5,7 +5,7 @@ import balanceService from './balanceService.js';
 
 /**
  * Admin Report Service - Provides real-time reporting and analytics
- * Tracks all financial operations for audit and monitoring
+ * Tracks all financial operations for audit and monitoring and accuracy 
  */
 
 /**
