@@ -146,12 +146,8 @@ export default function WalletPage() {
       setError('');
       
       const response = await apiClient.addWalletAddress({
-        type: 'bank_account',
-        accountHolder: bankForm.accountHolder,
-        accountNumber: bankForm.accountNumber,
-        bankName: bankForm.bankName,
-        walletAddress: '',
-        walletType: ''
+        walletAddress: bankForm.accountNumber,
+        walletType: 'bank_account'
       });
 
       // Immediately add the new account to state for real-time update
