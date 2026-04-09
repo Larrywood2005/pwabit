@@ -261,7 +261,7 @@ function WithdrawalPageContent() {
       
       // OTP verified, now process the withdrawal
       if (pendingWithdrawal) {
-        const withdrawalPayload = {
+        const withdrawalPayload: any = {
           amount: pendingWithdrawal.amount,
           currency: pendingWithdrawal.currency,
           method: pendingWithdrawal.method
