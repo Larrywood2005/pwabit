@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
 
     if (!token) {
@@ -15,7 +16,7 @@ export async function GET(
     }
 
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-    const response = await fetch(`${backendUrl}/investments/${params.id}/can-withdraw`, {
+    const response = await fetch(`${backendUrl}/investments/${id}/can-withdraw`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
