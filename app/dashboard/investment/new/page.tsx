@@ -470,10 +470,10 @@ export default function NewInvestmentPage() {
                 <p className='text-sm text-muted-foreground mb-2'>Network: USDT ERC20</p>
                 <div className='flex items-center gap-2'>
                   <code className='flex-1 p-2 rounded bg-background text-xs font-mono break-all text-foreground'>
-                    {DEPOSIT_WALLETS.usdtErc20.address}
+                    {DEPOSIT_WALLETS.usdtErc20?.address}
                   </code>
                   <button
-                    onClick={() => copyToClipboard(DEPOSIT_WALLETS.usdtErc20.address, 'usdt')}
+                    onClick={() => copyToClipboard(DEPOSIT_WALLETS.usdtErc20?.address || '', 'usdt')}
                     className='px-3 py-2 rounded hover:bg-background transition-colors text-muted-foreground hover:text-foreground'
                   >
                     {copied === 'usdt' ? '✓' : 'Copy'}
@@ -485,10 +485,10 @@ export default function NewInvestmentPage() {
                 <p className='text-sm text-muted-foreground mb-2'>Network: Ethereum</p>
                 <div className='flex items-center gap-2'>
                   <code className='flex-1 p-2 rounded bg-background text-xs font-mono break-all text-foreground'>
-                    {DEPOSIT_WALLETS.ethereum.address}
+                    {DEPOSIT_WALLETS.ethereum?.address}
                   </code>
                   <button
-                    onClick={() => copyToClipboard(DEPOSIT_WALLETS.ethereum.address, 'eth')}
+                    onClick={() => copyToClipboard(DEPOSIT_WALLETS.ethereum?.address || '', 'eth')}
                     className='px-3 py-2 rounded hover:bg-background transition-colors text-muted-foreground hover:text-foreground'
                   >
                     {copied === 'eth' ? '✓' : 'Copy'}
@@ -500,10 +500,10 @@ export default function NewInvestmentPage() {
                 <p className='text-sm text-muted-foreground mb-2'>Network: SOL</p>
                 <div className='flex items-center gap-2'>
                   <code className='flex-1 p-2 rounded bg-background text-xs font-mono break-all text-foreground'>
-                    {DEPOSIT_WALLETS.sol.address}
+                    {DEPOSIT_WALLETS.sol?.address}
                   </code>
                   <button
-                    onClick={() => copyToClipboard(DEPOSIT_WALLETS.sol.address, 'sol')}
+                    onClick={() => copyToClipboard(DEPOSIT_WALLETS.sol?.address || '', 'sol')}
                     className='px-3 py-2 rounded hover:bg-background transition-colors text-muted-foreground hover:text-foreground'
                   >
                     {copied === 'sol' ? '✓' : 'Copy'}
