@@ -1,6 +1,32 @@
 import axios, { AxiosError, AxiosInstance } from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://pwabit.onrender.com/';
+// Determine the correct API base URL
+const getApiBaseUrl = () => {
+  // In production (Vercel), use the environment variable
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Fallback: detect the backend URL from the current domain
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // If on powabitz.com or www.powabitz.com, use the render backend
+    if (hostname.includes('powabitz.com')) {
+      return 'https://pwabit.onrender.com/api';
+    }
+  }
+  
+  // Development fallback
+  return 'http://localhost:5000/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
+
+// Debug: log the API URL being used
+if (typeof window !== 'undefined') {
+  console.log('[v0] API Base URL:', API_BASE_URL);
+}
 
 interface ApiError {
   message: string;
@@ -18,7 +44,7 @@ class ApiClient {
       },
     });
 
-    // Add request interceptor to attach token
+// Request interceptor to attach token
     this.client.interceptors.request.use((config) => {
       const token = this.getToken();
       if (token) {
