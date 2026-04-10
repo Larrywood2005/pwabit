@@ -12,15 +12,25 @@ import { initTransactionService } from './services/transactionService.js';
 // Load environment variables
 dotenv.config();
 
+// Allowed origins for CORS and Socket.IO
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://powabitz.com',
+  'https://www.powabitz.com',
+  'https://pwabit-ckeb.vercel.app'
+];
+
 // Initialize Express app
 const app = express();
+app.set('trust proxy', 1);
 const server = createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
 // Initialize Socket.io for real-time balance/transaction updates
 const io = new SocketIOServer(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true
   },
@@ -86,7 +96,15 @@ await initializeDefaultAdmin();
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.error(`[CORS] Blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
