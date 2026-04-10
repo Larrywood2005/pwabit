@@ -198,9 +198,13 @@ export function RealtimeBalanceCard({ onWithdrawClick, onPowaUpClick }: Realtime
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <h2 className="text-base sm:text-lg md:text-xl font-bold text-foreground truncate">Your Wallet</h2>
           {isConnected ? (
-            <Wifi className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0" title="Real-time connected" />
+            <div title="Real-time connected" className="flex-shrink-0">
+              <Wifi className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
+            </div>
           ) : (
-            <WifiOff className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" title="Polling mode" />
+            <div title="Polling mode" className="flex-shrink-0">
+              <WifiOff className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
+            </div>
           )}
         </div>
         <Button
