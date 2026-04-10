@@ -47,7 +47,7 @@ export function PendingDepositCard({ investment, onConfirm, onReject, isProcessi
               <div>
                 <p className='text-xs text-muted-foreground'>Amount</p>
                 <p className='font-bold text-foreground'>
-                  {investment.currency === 'NGN' ? '₦' : '$'}{investment.amountInNaira && investment.currency === 'NGN' ? investment.amountInNaira.toLocaleString() : investment.amount}
+                  ${investment.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div>
@@ -100,12 +100,12 @@ export function PendingDepositCard({ investment, onConfirm, onReject, isProcessi
                 <div>
                   <p className='text-xs text-muted-foreground'>Amount</p>
                   <p className='text-sm font-semibold text-foreground'>
-                    ${investment.amount} {investment.currency === 'NGN' && `(₦${investment.amountInNaira?.toLocaleString()})`}
+                    ${investment.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
                 <div>
                   <p className='text-xs text-muted-foreground'>Exchange Rate</p>
-                  <p className='text-sm font-semibold text-foreground'>1 USD = {investment.exchangeRate || 1420} NGN</p>
+                  <p className='text-sm font-semibold text-foreground'>USD only - Crypto payments</p>
                 </div>
                 <div>
                   <p className='text-xs text-muted-foreground'>Package</p>

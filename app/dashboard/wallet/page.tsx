@@ -222,10 +222,10 @@ export default function WalletPage() {
               <p className='text-sm opacity-90 mb-2'>Total Balance</p>
               <h2 className='text-4xl font-bold mb-6'>${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
               <div className='flex gap-4'>
-                <button onClick={() => setShowAddFunds(true)} className='px-6 py-2 rounded-lg bg-white/20 hover:bg-white/30 font-semibold transition-all flex items-center gap-2'>
+                <Link href='/dashboard/investment/new' className='px-6 py-2 rounded-lg bg-white/20 hover:bg-white/30 font-semibold transition-all flex items-center gap-2'>
                   <Plus size={18} />
                   Add Funds
-                </button>
+                </Link>
                 <Link href='/dashboard/withdraw' className='px-6 py-2 rounded-lg bg-white/20 hover:bg-white/30 font-semibold transition-all flex items-center gap-2'>
                   <ArrowDownLeft size={18} />
                   Withdraw

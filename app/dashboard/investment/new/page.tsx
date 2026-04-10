@@ -193,7 +193,7 @@ export default function NewInvestmentPage() {
       }
 
       setTransactionHash(response.transactionId || response.transaction?._id || 'TXN' + Date.now());
-      setStep('payment');
+      setPaymentSent(true);
     } catch (err: any) {
       setError(err.message || 'Failed to create investment');
     } finally {
@@ -338,51 +338,27 @@ export default function NewInvestmentPage() {
               <p className='text-2xl font-bold text-foreground'>{selectedPackage?.name}</p>
             </div>
 
-            {/* Currency Toggle */}
+            {/* Currency Toggle - USD Only */}
             <div>
-              <label className='block text-sm font-semibold text-foreground mb-3'>Select Currency</label>
-              <div className='grid grid-cols-2 gap-4'>
-                <button
-                  onClick={() => setCurrency('USD')}
-                  className={`py-3 px-4 rounded-lg font-semibold transition-all ${
-                    currency === 'USD'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground hover:bg-muted/80'
-                  }`}
-                >
-                  USD ($)
-                </button>
-                <button
-                  onClick={() => setCurrency('NGN')}
-                  className={`py-3 px-4 rounded-lg font-semibold transition-all ${
-                    currency === 'NGN'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground hover:bg-muted/80'
-                  }`}
-                >
-                  NGN (₦) - 1:1,420
-                </button>
+              <label className='block text-sm font-semibold text-foreground mb-3'>Currency</label>
+              <div className='p-4 rounded-lg bg-primary/10 border border-primary/30'>
+                <p className='font-semibold text-primary'>USD ($) - Crypto Payments Only</p>
+                <p className='text-xs text-muted-foreground mt-1'>All investments are denominated in USD and paid via cryptocurrency</p>
               </div>
             </div>
 
             <div>
-              <label className='block text-sm font-semibold text-foreground mb-2'>Investment Amount ({currency})</label>
+              <label className='block text-sm font-semibold text-foreground mb-2'>Investment Amount (USD)</label>
               <div className='relative'>
-                <span className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold'>{currency === 'USD' ? '$' : '₦'}</span>
+                <span className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold'>$</span>
                 <input
                   type='number'
-                  step={currency === 'USD' ? '0.01' : '1'}
+                  step='0.01'
                   min={selectedPackage?.min || 0}
                   max={selectedPackage?.max || undefined}
-                  value={currency === 'USD' ? amount : (parseFloat(amount || '0') * 1420)}
+                  value={amount}
                   onChange={(e) => {
-                    if (currency === 'USD') {
-                      setAmount(e.target.value);
-                    } else {
-                      // Convert NGN back to USD
-                      const ngnAmount = parseFloat(e.target.value) || 0;
-                      setAmount((ngnAmount / 1420).toFixed(2));
-                    }
+                    setAmount(e.target.value);
                     setError('');
                   }}
                   placeholder='Enter investment amount'
@@ -390,12 +366,7 @@ export default function NewInvestmentPage() {
                 />
               </div>
               <p className='text-xs text-muted-foreground mt-2'>
-                {currency === 'USD' && (
-                  <>Min: ${selectedPackage?.min} {selectedPackage?.max && `• Max: $${selectedPackage.max}`}</>
-                )}
-                {currency === 'NGN' && (
-                  <>Min: ₦{(selectedPackage?.min || 0) * 1420} {selectedPackage?.max && `• Max: ₦${selectedPackage.max * 1420}`}</>
-                )}
+                Min: ${selectedPackage?.min} {selectedPackage?.max && `• Max: $${selectedPackage.max}`}
               </p>
             </div>
 
@@ -441,7 +412,95 @@ export default function NewInvestmentPage() {
           <p className='text-muted-foreground mt-2'>Send {amount} USD in cryptocurrency to activate your investment</p>
         </div>
 
-        <div className='space-y-6'>
+        {/* SUCCESS PAGE - Show when payment is sent */}
+        {paymentSent ? (
+          <div className='space-y-6'>
+            <div className='p-8 rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-2 border-green-500/50 space-y-4'>
+              <div className='flex items-center justify-center mb-4'>
+                <CheckCircle className='text-green-600 w-16 h-16' />
+              </div>
+              <h2 className='text-3xl font-bold text-center text-green-600'>Payment Received Successfully! ✓</h2>
+              <p className='text-center text-lg text-muted-foreground'>Your investment is now under review</p>
+            </div>
+
+            {/* Success Details */}
+            <div className='p-8 rounded-lg bg-card border border-border space-y-6'>
+              <div>
+                <h3 className='text-xl font-bold text-foreground mb-4'>What Happens Next?</h3>
+                <ul className='space-y-3'>
+                  <li className='flex items-start gap-3'>
+                    <CheckCircle className='text-green-600 flex-shrink-0 mt-0.5' size={20} />
+                    <div>
+                      <p className='font-semibold text-foreground'>Payment Verified</p>
+                      <p className='text-sm text-muted-foreground'>Your payment receipt is being reviewed by our team</p>
+                    </div>
+                  </li>
+                  <li className='flex items-start gap-3'>
+                    <div className='w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold text-primary'>2</div>
+                    <div>
+                      <p className='font-semibold text-foreground'>Activation</p>
+                      <p className='text-sm text-muted-foreground'>Once verified (usually 2-4 hours), your investment will be activated</p>
+                    </div>
+                  </li>
+                  <li className='flex items-start gap-3'>
+                    <div className='w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold text-primary'>3</div>
+                    <div>
+                      <p className='font-semibold text-foreground'>Start Earning</p>
+                      <p className='text-sm text-muted-foreground'>Begin earning {selectedPackage?.dailyReturn}% daily returns on your investment</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Investment Summary */}
+              <div className='border-t border-border pt-6'>
+                <h3 className='font-bold text-foreground mb-4'>Investment Summary</h3>
+                <div className='space-y-3'>
+                  <div className='flex justify-between items-center p-3 bg-muted/50 rounded-lg'>
+                    <span className='text-muted-foreground'>Package</span>
+                    <span className='font-semibold text-foreground'>{selectedPackage?.name}</span>
+                  </div>
+                  <div className='flex justify-between items-center p-3 bg-muted/50 rounded-lg'>
+                    <span className='text-muted-foreground'>Investment Amount</span>
+                    <span className='font-semibold text-foreground'>${parseFloat(amount || '0').toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className='flex justify-between items-center p-3 bg-green-500/10 rounded-lg border border-green-500/30'>
+                    <span className='text-muted-foreground'>Daily Return ({selectedPackage?.dailyReturn}%)</span>
+                    <span className='font-bold text-green-600'>${(parseFloat(amount || '0') * (selectedPackage?.dailyReturn || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className='flex justify-between items-center p-3 bg-blue-500/10 rounded-lg border border-blue-500/30'>
+                    <span className='text-muted-foreground'>Reference ID</span>
+                    <code className='font-mono text-sm text-foreground'>{transactionHash}</code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className='space-y-3 pt-6 border-t border-border'>
+                <button
+                  onClick={() => router.push('/dashboard/investments')}
+                  className='w-full py-3 rounded-lg bg-gradient-to-r from-primary to-secondary text-primary-foreground font-semibold hover:shadow-lg hover:shadow-primary/30 transition-all'
+                >
+                  View My Investments
+                </button>
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className='w-full py-3 rounded-lg border border-border text-foreground font-semibold hover:bg-muted/50 transition-all'
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            </div>
+
+            {/* Email Notification */}
+            <div className='p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-600 text-sm'>
+              <p className='font-semibold mb-1'>📧 Check Your Email</p>
+              <p className='text-xs'>We've sent you a confirmation email with your investment details and next steps.</p>
+            </div>
+          </div>
+        ) : (
+          // Original payment flow
+          <div className='space-y-6'>
           {/* Investment Summary */}
           <div className='p-8 rounded-lg bg-card border border-border space-y-4'>
             <h2 className='text-xl font-bold text-foreground'>Investment Summary</h2>
@@ -628,7 +687,8 @@ export default function NewInvestmentPage() {
           >
             Skip for Now
           </button>
-        </div>
+          </div>
+        )}
       </div>
     </ProtectedRoute>
   );
