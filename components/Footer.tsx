@@ -55,7 +55,7 @@ export default function Footer() {
               </a>
               <a href='tel:+1234567890' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm'>
                 <Phone size={16} />
-                +1 (234) 567-7865
+                +1 (234) 567-890
               </a>
               <div className='flex items-center gap-2 text-muted-foreground text-sm'>
                 <MapPin size={16} />
@@ -90,13 +90,13 @@ export default function Footer() {
             © 2026 Powabitz. All rights reserved.
           </div>
           <div className='flex items-center gap-6 text-sm'>
-            <Link href='#' className='text-muted-foreground hover:text-primary transition-colors'>
+            <Link href='/privacy-policy' className='text-muted-foreground hover:text-primary transition-colors'>
               Privacy Policy
             </Link>
-            <Link href='#' className='text-muted-foreground hover:text-primary transition-colors'>
+            <Link href='/terms-of-service' className='text-muted-foreground hover:text-primary transition-colors'>
               Terms of Service
             </Link>
-            <Link href='#' className='text-muted-foreground hover:text-primary transition-colors'>
+            <Link href='/cookies-policy' className='text-muted-foreground hover:text-primary transition-colors'>
               Cookie Policy
             </Link>
           </div>
