@@ -6,8 +6,8 @@ import { LanguageProvider } from '@/context/LanguageContext'
 import { AICustomerSupport } from '@/components/AICustomerSupport'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const geist = Geist({ subsets: ["latin"], variable: '--font-geist' });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: '--font-geist-mono' });
 
 export const metadata: Metadata = {
   title: 'Powabitz - Crypto Investment Platform',
@@ -38,8 +38,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className="font-sans antialiased" style={{ fontFamily: _geist.style.fontFamily }}>
+    <html lang="en" className={`${geist.variable} ${geistMono.variable}`}>
+      <body className="font-sans antialiased">
         <LanguageProvider>
           <AuthProvider>
             {children}
