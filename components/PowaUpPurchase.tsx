@@ -64,7 +64,6 @@ export default function PowaUpPurchase() {
   const canAfford = () => {
     if (!userBalance) return false;
     const cost = calculateCost();
-    // Use TOTAL BALANCE for PowaUp purchases (invested + earnings + cash)
     return userBalance.totalBalance >= cost;
   };
 
@@ -89,7 +88,6 @@ export default function PowaUpPurchase() {
 
       const result = await apiClient.purchasePowaUp(amount);
 
-      // Update balances with response
       setPowaUpBalance({
         powaUpBalance: result.powaUpBalance,
         powaUpSpent: powaUpBalance?.powaUpSpent || 0,
@@ -103,12 +101,9 @@ export default function PowaUpPurchase() {
       });
 
       setSuccess(`Successfully purchased ${amount} PowaUp! Balance updated in real-time.`);
-      
-      // Reset form
       setCustomAmount('');
       setSelectedAmount(10);
 
-      // Clear success message after 4 seconds
       setTimeout(() => setSuccess(''), 4000);
     } catch (err: any) {
       console.error('[v0] Purchase error:', err);
@@ -312,72 +307,6 @@ export default function PowaUpPurchase() {
           <div>
             <p className='text-[10px] sm:text-xs text-muted-foreground'>Spent</p>
             <p className='text-base sm:text-lg font-bold text-foreground break-words'>
-              ${((powaUpBalance?.totalPowaUpPurchased || 0) * POWAUP_PRICE).toFixed(2)}
-            </p>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-          className='w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-bold py-3 disabled:opacity-50'
-        >
-          {purchasing ? (
-            <span className='flex items-center gap-2'>
-              <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin' />
-              Processing...
-            </span>
-          ) : (
-            <span className='flex items-center gap-2'>
-              <ShoppingCart className='w-5 h-5' />
-              Buy {getAmount()} PowaUp for ${calculateCost().toFixed(2)}
-            </span>
-          )}
-        </Button>
-
-        {/* Benefits */}
-        <div className='p-4 rounded-lg bg-background/50 border border-border'>
-          <p className='text-sm font-semibold text-foreground mb-3 flex items-center gap-2'>
-            <TrendingUp className='w-4 h-4 text-green-500' />
-            What PowaUp Does
-          </p>
-          <ul className='space-y-2 text-sm text-muted-foreground'>
-            <li className='flex gap-2'>
-              <span className='text-purple-500'>•</span>
-              <span>Activate trading bonuses and multipliers</span>
-            </li>
-            <li className='flex gap-2'>
-              <span className='text-purple-500'>•</span>
-              <span>Unlock premium trading strategies</span>
-            </li>
-            <li className='flex gap-2'>
-              <span className='text-purple-500'>•</span>
-              <span>Get enhanced return opportunities</span>
-            </li>
-            <li className='flex gap-2'>
-              <span className='text-purple-500'>•</span>
-              <span>Access exclusive market signals</span>
-            </li>
-          </ul>
-        </div>
-
-        {/* Stats */}
-        <div className='grid grid-cols-3 gap-3 p-4 rounded-lg bg-background/50 border border-border'>
-          <div>
-            <p className='text-xs text-muted-foreground'>Total Purchased</p>
-            <p className='text-lg font-bold text-foreground'>
-              {powaUpBalance?.totalPowaUpPurchased || 0}
-            </p>
-          </div>
-          <div>
-            <p className='text-xs text-muted-foreground'>Currently Used</p>
-            <p className='text-lg font-bold text-foreground'>
-              {powaUpBalance?.powaUpSpent || 0}
-            </p>
-          </div>
-          <div>
-            <p className='text-xs text-muted-foreground'>Spent</p>
-            <p className='text-lg font-bold text-foreground'>
               ${((powaUpBalance?.totalPowaUpPurchased || 0) * POWAUP_PRICE).toFixed(2)}
             </p>
           </div>
