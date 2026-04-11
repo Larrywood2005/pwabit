@@ -317,24 +317,113 @@ export default function WalletPage() {
               )}
             </div>
 
-            {/* Deposit Address Section */}
-            <div className='rounded-lg bg-card border border-border p-6'>
-              <h3 className='text-lg font-bold text-foreground mb-4'>Deposit Address</h3>
-              <div className='bg-muted/50 rounded-lg p-4'>
-                <p className='text-xs text-muted-foreground mb-2'>Your Public Address</p>
-                <div className='flex items-center gap-2'>
-                  <code className='flex-1 text-sm font-mono text-foreground break-all'>
-                    1A1z7agoat7d8hgFmXqB1y4uq96g5dEQ5q
-                  </code>
-                  <button
-                    onClick={() => copyToClipboard('1A1z7agoat7d8hgFmXqB1y4uq96g5dEQ5q')}
-                    className='px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center gap-2'
-                  >
-                    <Copy size={16} />
-                    {copied ? 'Copied!' : 'Copy'}
-                  </button>
+            {/* Wallet Addresses Section */}
+            <div className='rounded-lg bg-card border border-border overflow-hidden'>
+              <div className='p-4 sm:p-6 border-b border-border'>
+                <h3 className='text-lg sm:text-xl font-bold text-foreground flex items-center gap-2 mb-2'>
+                  <Building2 size={24} className='text-primary' />
+                  My Wallet Addresses
+                </h3>
+                <p className='text-xs sm:text-sm text-muted-foreground'>Your deposit addresses for various cryptocurrencies and payment methods</p>
+              </div>
+
+              {bankAccounts && bankAccounts.length > 0 ? (
+                <div className='divide-y divide-border'>
+                  {bankAccounts.map((account) => (
+                    <div key={account._id} className='p-4 sm:p-6 hover:bg-muted/50 transition-colors'>
+                      <div className='flex items-start justify-between gap-3 mb-3'>
+                        <div className='flex-1 min-w-0'>
+                          <h4 className='font-semibold text-foreground text-sm sm:text-base'>{account.accountHolder}</h4>
+                          <p className='text-xs sm:text-sm text-muted-foreground'>{account.bankName} • {account.currency}</p>
+                        </div>
+                        <span className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-semibold flex-shrink-0 ${
+                          account.status === 'active' 
+                            ? 'bg-green-500/20 text-green-600' 
+                            : 'bg-yellow-500/20 text-yellow-600'
+                        }`}>
+                          {account.status}
+                        </span>
+                      </div>
+                      <div className='bg-muted/50 rounded-lg p-3 mb-3 flex items-center justify-between gap-2'>
+                        <code className='text-xs sm:text-sm font-mono text-foreground break-all flex-1'>{account.accountNumber}</code>
+                        <button
+                          onClick={() => copyToClipboard(account.accountNumber)}
+                          className='px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all flex items-center gap-1 flex-shrink-0 text-xs'
+                        >
+                          <Copy size={14} />
+                          {copied ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                      <div className='flex gap-2'>
+                        <button
+                          onClick={() => handleDeleteBankAccount(account._id)}
+                          className='flex-1 px-3 py-1.5 rounded-lg border border-red-500/20 text-red-600 hover:bg-red-500/10 transition-colors text-xs sm:text-sm font-medium'
+                        >
+                          <X size={14} className='inline mr-1' />
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <p className='text-xs text-yellow-600 mt-3'>⚠️ Only send crypto to this address. Do not send other coins or tokens.</p>
+              ) : (
+                <div className='p-6 text-center'>
+                  <Wallet size={32} className='text-muted-foreground mx-auto mb-3 opacity-50' />
+                  <p className='text-muted-foreground text-sm mb-4'>No wallet addresses added yet</p>
+                </div>
+              )}
+
+              {/* Add New Address */}
+              <div className='p-4 sm:p-6 border-t border-border bg-muted/30'>
+                {!showAddBank ? (
+                  <button
+                    onClick={() => setShowAddBank(true)}
+                    className='w-full px-4 py-2.5 sm:py-3 rounded-lg border border-dashed border-primary text-primary hover:bg-primary/10 transition-colors font-semibold text-sm sm:text-base flex items-center justify-center gap-2'
+                  >
+                    <Plus size={18} />
+                    Add New Wallet Address
+                  </button>
+                ) : (
+                  <form onSubmit={handleAddBankAccount} className='space-y-3 sm:space-y-4'>
+                    <input
+                      type='text'
+                      placeholder='Account Holder Name'
+                      value={bankForm.accountHolder}
+                      onChange={(e) => setBankForm({ ...bankForm, accountHolder: e.target.value })}
+                      className='w-full px-3 sm:px-4 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary'
+                    />
+                    <input
+                      type='text'
+                      placeholder='Wallet Address / Account Number'
+                      value={bankForm.accountNumber}
+                      onChange={(e) => setBankForm({ ...bankForm, accountNumber: e.target.value })}
+                      className='w-full px-3 sm:px-4 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary'
+                    />
+                    <input
+                      type='text'
+                      placeholder='Address Name (e.g., Bitcoin Wallet, Bank Account)'
+                      value={bankForm.bankName}
+                      onChange={(e) => setBankForm({ ...bankForm, bankName: e.target.value })}
+                      className='w-full px-3 sm:px-4 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:border-primary'
+                    />
+                    <div className='flex gap-2'>
+                      <button
+                        type='button'
+                        onClick={() => setShowAddBank(false)}
+                        className='flex-1 px-3 sm:px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted transition-colors text-sm font-medium'
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type='submit'
+                        disabled={submittingBank || !bankForm.accountHolder || !bankForm.accountNumber}
+                        className='flex-1 px-3 sm:px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors text-sm font-medium'
+                      >
+                        {submittingBank ? 'Adding...' : 'Add Address'}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
             </div>
           </>
