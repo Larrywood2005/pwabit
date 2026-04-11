@@ -320,35 +320,6 @@ export default function PowaUpPurchase() {
     </Card>
   );
 }
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className='p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-start gap-3'>
-            <AlertCircle className='w-5 h-5 text-red-500 flex-shrink-0 mt-0.5' />
-            <div className='flex-1'>
-              <p className='text-sm font-semibold text-red-600'>{error}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Success Message */}
-        {success && (
-          <div className='p-4 rounded-lg bg-green-500/10 border border-green-500/20 flex items-start gap-3'>
-            <CheckCircle className='w-5 h-5 text-green-500 flex-shrink-0 mt-0.5' />
-            <div className='flex-1'>
-              <p className='text-sm font-semibold text-green-600'>{success}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Purchase Button */}
-        <Button
-          onClick={handlePurchase}
-          disabled={purchasing || !canAfford() || !getAmount()}
           className='w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-bold py-3 disabled:opacity-50'
         >
           {purchasing ? (

@@ -1,5 +1,12 @@
 import type { Config } from "tailwindcss"
 
+let animatePlugin;
+try {
+  animatePlugin = require("tailwindcss-animate");
+} catch (e) {
+  animatePlugin = null;
+}
+
 const config = {
   darkMode: "class",
   content: [
@@ -77,7 +84,7 @@ const config = {
     },
   },
   plugins: [
-    require("tailwindcss-animate")
+    ...(animatePlugin ? [animatePlugin] : []),
   ],
 } satisfies Config
 
