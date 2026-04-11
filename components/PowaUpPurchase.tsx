@@ -319,47 +319,7 @@ export default function PowaUpPurchase() {
       </div>
     </Card>
   );
-            })}
-          </div>
-        </div>
-
-        {/* Custom Amount */}
-        <div>
-          <p className='text-sm font-semibold text-foreground mb-2'>Custom Amount</p>
-          <div className='flex gap-2'>
-            <input
-              type='number'
-              value={customAmount}
-              onChange={(e) => {
-                setCustomAmount(e.target.value);
-                setSelectedAmount(0);
-              }}
-              placeholder='Enter amount'
-              min='1'
-              className='flex-1 px-4 py-2 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-purple-500'
-            />
-            <div className='px-4 py-2 rounded-lg bg-background border border-border text-right min-w-fit'>
-              <p className='text-xs text-muted-foreground'>Cost</p>
-              <p className='font-bold text-foreground'>${calculateCost().toFixed(2)}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Balance Warning */}
-        {!canAfford() && userBalance && (
-          <div className='p-3 sm:p-4 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-start gap-3'>
-            <AlertCircle className='w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5' />
-            <div className='flex-1 text-sm text-orange-600'>
-              <p className='font-semibold'>Insufficient Balance</p>
-              <p className='text-xs mt-1'>
-                You need ${calculateCost().toFixed(2)} but your Total Balance is ${userBalance.totalBalance.toFixed(2)}.
-                {userBalance.lockedInTrades > 0 && (
-                  <span> You have ${userBalance.lockedInTrades.toFixed(2)} locked in active trades.</span>
-                )}
-              </p>
-            </div>
-          </div>
-        )}
+}
               </p>
             </div>
           </div>
