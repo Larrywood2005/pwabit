@@ -172,6 +172,24 @@ class ApiClient {
     }
   }
 
+  async forgotPassword(email: string) {
+    try {
+      const response = await this.client.post('/auth/forgot-password', { email });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    try {
+      const response = await this.client.post('/auth/reset-password', { token, newPassword });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Admin endpoints
   async getAdminUsers(page: number = 1, limit: number = 20, status?: string) {
     try {

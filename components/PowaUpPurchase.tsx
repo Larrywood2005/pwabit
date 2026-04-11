@@ -64,7 +64,8 @@ export default function PowaUpPurchase() {
   const canAfford = () => {
     if (!userBalance) return false;
     const cost = calculateCost();
-    return userBalance.availableBalance >= cost;
+    // Use TOTAL BALANCE for PowaUp purchases (invested + earnings + cash)
+    return userBalance.totalBalance >= cost;
   };
 
   const handlePurchase = async () => {
@@ -82,7 +83,7 @@ export default function PowaUpPurchase() {
       }
 
       if (!canAfford()) {
-        setError(`Insufficient balance. You need $${cost.toFixed(2)} but have $${userBalance?.availableBalance.toFixed(2)}`);
+        setError(`Insufficient balance. You need $${cost.toFixed(2)} but have $${userBalance?.totalBalance.toFixed(2)} in Total Balance`);
         return;
       }
 

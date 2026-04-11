@@ -146,7 +146,7 @@ router.post('/:id/trade', authenticate, async (req, res) => {
       return res.status(400).json({ message: 'A trade is already in progress for this investment' });
     }
     
-    // Check if 24h has passed since activation or last trade
+    // Check if there's a cooldown between trades (only check lastTradedAt)
     const now = Date.now();
     if (investment.lastTradedAt) {
       const hoursSinceLastTrade = (now - investment.lastTradedAt) / (1000 * 60 * 60);
@@ -155,14 +155,8 @@ router.post('/:id/trade', authenticate, async (req, res) => {
           message: `Can trade again in ${Math.ceil(24 - hoursSinceLastTrade)} hours` 
         });
       }
-    } else if (investment.activatedAt) {
-      const hoursSinceActivation = (now - investment.activatedAt) / (1000 * 60 * 60);
-      if (hoursSinceActivation < 24) {
-        return res.status(400).json({ 
-          message: `Investment must be active for 24 hours before trading. Available in ${Math.ceil(24 - hoursSinceActivation)} hours` 
-        });
-      }
     }
+    // No waiting period after activation - users can trade immediately once investment is active
     
     // Lock the amount and start trade
     const tradeStartTime = new Date();
@@ -392,7 +386,7 @@ router.post('/:id/activate', authenticate, async (req, res) => {
     const now = new Date();
     investment.status = 'active';
     investment.activatedAt = now;
-    investment.canTradeAfter = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    investment.canTradeAfter = now; // Can trade immediately after activation
     
     await investment.save();
     

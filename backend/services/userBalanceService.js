@@ -8,29 +8,49 @@ import Transaction from '../models/Transaction.js';
  */
 
 /**
- * Validate PowaUp purchase - only checks current balance (NOT locked funds)
- * PowaUp should be purchaseable with immediate available balance
+ * Validate PowaUp purchase - uses TOTAL BALANCE (invested + earnings + cash)
+ * Users can purchase PowaUp with their entire portfolio value
  */
 export const validatePowaUpPurchase = async (userId, cost) => {
   try {
     const user = await User.findById(userId);
     if (!user) throw new Error('User not found');
 
-    // Only check current balance - don't deduct locked funds
-    // PowaUp purchases should not be blocked by active trades
-    if (user.currentBalance < cost) {
+    // Get all active investments to calculate total invested
+    const activeInvestments = await Investment.find({
+      userId,
+      status: 'active',
+      isWithdrawn: false
+    });
+
+    const totalInvested = activeInvestments.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+    
+    // Calculate earnings from investments
+    const investmentReturns = user.investmentReturns || 0;
+    const puzzleGameBonuses = user.puzzleGameBonuses || 0;
+    const tradingBonuses = user.tradingBonuses || 0;
+    const referralEarnings = user.referralEarnings || 0;
+    const totalEarnings = investmentReturns + puzzleGameBonuses + tradingBonuses + referralEarnings;
+
+    // TOTAL BALANCE = Invested Capital + All Earnings + Current Cash Balance
+    const totalBalance = totalInvested + totalEarnings + (user.currentBalance || 0);
+
+    // PowaUp can be purchased with Total Balance
+    if (totalBalance < cost) {
       return {
         isValid: false,
         reason: 'Insufficient balance for PowaUp purchase',
         currentBalance: user.currentBalance,
+        totalBalance: totalBalance,
         requiredAmount: cost,
-        shortfall: cost - user.currentBalance
+        shortfall: cost - totalBalance
       };
     }
 
     return {
       isValid: true,
-      currentBalance: user.currentBalance
+      currentBalance: user.currentBalance,
+      totalBalance: totalBalance
     };
   } catch (error) {
     console.error('[userBalanceService] Error validating PowaUp purchase:', error);

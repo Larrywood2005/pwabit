@@ -27,19 +27,32 @@ export default function CandlestickChart({
   const [dimensions, setDimensions] = useState({ width: propWidth || 400, height: propHeight || 250 });
   const [candles, setCandles] = useState<Candle[]>([]);
 
-  // Responsive dimensions based on container size
+  // Responsive dimensions based on container size - Mobile First
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.clientWidth;
-        // Mobile-first responsive sizing
-        const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-        const isTablet = typeof window !== 'undefined' && window.innerWidth >= 640 && window.innerWidth < 1024;
+        // Mobile-first responsive sizing with better breakpoints
+        const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+        const isMobile = screenWidth < 480;
+        const isSmallMobile = screenWidth < 380;
+        const isTablet = screenWidth >= 480 && screenWidth < 768;
+        const isDesktop = screenWidth >= 768;
         
         let chartWidth = propWidth || containerWidth || 400;
-        let chartHeight = propHeight || (isMobile ? 180 : isTablet ? 250 : 350);
+        let chartHeight;
         
-        // Constrain to container
+        if (isSmallMobile) {
+          chartHeight = propHeight || 160;
+        } else if (isMobile) {
+          chartHeight = propHeight || 180;
+        } else if (isTablet) {
+          chartHeight = propHeight || 220;
+        } else {
+          chartHeight = propHeight || 300;
+        }
+        
+        // Constrain to container width
         chartWidth = Math.min(chartWidth, containerWidth || 800);
         
         setDimensions({ width: chartWidth, height: chartHeight });
@@ -47,8 +60,18 @@ export default function CandlestickChart({
     };
 
     updateDimensions();
+    
+    // Use ResizeObserver for better responsiveness
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+    
     window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+      resizeObserver.disconnect();
+    };
   }, [propWidth, propHeight]);
 
   const { width, height } = dimensions;
@@ -59,7 +82,10 @@ export default function CandlestickChart({
       const newCandles: Candle[] = [];
       let basePrice = 35000;
       
-      for (let i = 0; i < 20; i++) {
+      // Fewer candles on mobile for better visibility
+      const candleCount = width < 400 ? 15 : 20;
+      
+      for (let i = 0; i < candleCount; i++) {
         const volatility = 200 + Math.random() * 400;
         const open = basePrice + (Math.random() - 0.5) * volatility;
         const close = basePrice + (Math.random() - 0.5) * volatility;
@@ -81,7 +107,7 @@ export default function CandlestickChart({
     };
     
     setCandles(generateCandles());
-  }, []);
+  }, [width]);
   
   // Animate new candle when trading
   useEffect(() => {
@@ -103,12 +129,13 @@ export default function CandlestickChart({
         newCandle.high = Math.max(newCandle.open, newCandle.close) + Math.random() * 300;
         newCandle.low = Math.min(newCandle.open, newCandle.close) - Math.random() * 300;
         
-        return [...prev.slice(-19), newCandle];
+        const maxCandles = width < 400 ? 14 : 19;
+        return [...prev.slice(-maxCandles), newCandle];
       });
     }, 2000); // Update every 2 seconds
     
     return () => clearInterval(interval);
-  }, [isTrading, animated]);
+  }, [isTrading, animated, width]);
   
   if (candles.length === 0) {
     return (
@@ -129,63 +156,90 @@ export default function CandlestickChart({
   const chartMaxPrice = maxPrice + padding;
   const chartPriceRange = chartMaxPrice - chartMinPrice;
   
-  // Canvas dimensions
-  const candleWidth = (width - 60) / candles.length;
+  // Canvas dimensions - adjusted for mobile
+  const isMobile = width < 400;
+  const isSmallMobile = width < 350;
+  const leftPadding = isSmallMobile ? 25 : isMobile ? 35 : 50;
+  const rightPadding = isSmallMobile ? 5 : isMobile ? 10 : 15;
+  const topPadding = isSmallMobile ? 12 : isMobile ? 15 : 20;
+  const bottomPadding = isSmallMobile ? 25 : isMobile ? 30 : 40;
+  
+  const chartWidth = width - leftPadding - rightPadding;
+  const chartHeight = height - topPadding - bottomPadding;
+  
+  const candleWidth = chartWidth / candles.length;
   const candleSpacing = candleWidth * 0.2;
-  const actualCandleWidth = candleWidth - candleSpacing;
+  const actualCandleWidth = Math.max(2, candleWidth - candleSpacing);
   
   const priceToY = (price: number) => {
-    return height - 40 - ((price - chartMinPrice) / chartPriceRange) * (height - 80);
+    return topPadding + ((chartMaxPrice - price) / chartPriceRange) * chartHeight;
   };
-  
-  const isMobile = width < 400;
+
+  // Format price for display
+  const formatPrice = (price: number) => {
+    if (isSmallMobile) {
+      return (price / 1000).toFixed(0) + 'k';
+    }
+    if (isMobile) {
+      return (price / 1000).toFixed(1) + 'k';
+    }
+    return Math.round(price).toLocaleString();
+  };
 
   return (
-    <div ref={containerRef} className="relative bg-muted rounded-lg overflow-hidden w-full" style={{ height }}>
+    <div 
+      ref={containerRef} 
+      className="relative bg-muted rounded-lg overflow-hidden w-full touch-pan-x touch-pan-y" 
+      style={{ height, minHeight: isSmallMobile ? 140 : isMobile ? 160 : 200 }}
+    >
       <svg
         width="100%"
-        height={height}
+        height="100%"
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="xMidYMid meet"
         className="absolute inset-0"
         style={{ background: 'linear-gradient(to bottom, #1a1a2e 0%, #16213e 100%)' }}
       >
-        {/* Vertical grid lines */}
-        {candles.map((_, i) => (
-          <line
-            key={`vgrid-${i}`}
-            x1={40 + (i + 0.5) * candleWidth}
-            y1="20"
-            x2={40 + (i + 0.5) * candleWidth}
-            y2={height - 40}
-            stroke="rgba(255,255,255,0.05)"
-            strokeWidth="1"
-          />
-        ))}
+        {/* Vertical grid lines - fewer on mobile */}
+        {candles.filter((_, i) => isMobile ? i % 3 === 0 : i % 2 === 0).map((_, idx) => {
+          const i = isMobile ? idx * 3 : idx * 2;
+          if (i >= candles.length) return null;
+          return (
+            <line
+              key={`vgrid-${i}`}
+              x1={leftPadding + (i + 0.5) * candleWidth}
+              y1={topPadding}
+              x2={leftPadding + (i + 0.5) * candleWidth}
+              y2={height - bottomPadding}
+              stroke="rgba(255,255,255,0.05)"
+              strokeWidth="1"
+            />
+          );
+        })}
         
         {/* Horizontal grid lines */}
-        {[0, 1, 2, 3, 4].map((_, i) => {
-          const y = 20 + (i / 4) * (height - 60);
-          const price = chartMaxPrice - (i / 4) * chartPriceRange;
+        {[0, 1, 2, 3].map((_, i) => {
+          const y = topPadding + (i / 3) * chartHeight;
+          const price = chartMaxPrice - (i / 3) * chartPriceRange;
           
           return (
             <g key={`hgrid-${i}`}>
               <line
-                x1="40"
+                x1={leftPadding}
                 y1={y}
-                x2={width}
+                x2={width - rightPadding}
                 y2={y}
                 stroke="rgba(255,255,255,0.05)"
                 strokeWidth="1"
               />
               <text
-                x={isMobile ? 5 : 10}
-                y={y + 4}
-                fontSize={isMobile ? 8 : 12}
+                x={isSmallMobile ? 3 : isMobile ? 5 : 8}
+                y={y + 3}
+                fontSize={isSmallMobile ? 7 : isMobile ? 8 : 11}
                 fill="rgba(255,255,255,0.6)"
-                textAnchor="end"
+                textAnchor="start"
               >
-                ${isMobile ? (Math.round(price) / 1000).toFixed(0) + 'k' : Math.round(price).toLocaleString()}
+                ${formatPrice(price)}
               </text>
             </g>
           );
@@ -193,7 +247,7 @@ export default function CandlestickChart({
         
         {/* Candlesticks */}
         {candles.map((candle, i) => {
-          const x = 40 + i * candleWidth + candleSpacing / 2;
+          const x = leftPadding + i * candleWidth + candleSpacing / 2;
           const yHigh = priceToY(candle.high);
           const yLow = priceToY(candle.low);
           const yOpen = priceToY(candle.open);
@@ -213,7 +267,7 @@ export default function CandlestickChart({
                 x2={x + actualCandleWidth / 2}
                 y2={yLow}
                 stroke={isGreen ? '#10b981' : '#ef4444'}
-                strokeWidth="1"
+                strokeWidth={isSmallMobile ? 0.5 : 1}
               />
               
               {/* Body */}
@@ -224,7 +278,7 @@ export default function CandlestickChart({
                 height={bodyHeight}
                 fill={isGreen ? '#10b981' : '#ef4444'}
                 stroke={isGreen ? '#059669' : '#dc2626'}
-                strokeWidth="1"
+                strokeWidth={isSmallMobile ? 0.3 : 0.5}
                 opacity={isTrading && i === candles.length - 1 ? 0.8 : 1}
               />
             </g>
@@ -234,23 +288,78 @@ export default function CandlestickChart({
         {/* Current price indicator */}
         {isTrading && candles.length > 0 && (
           <g>
+            {/* Pulsing dot on latest candle */}
             <circle
-              cx={40 + (candles.length - 1) * candleWidth + candleSpacing / 2 + actualCandleWidth / 2}
+              cx={leftPadding + (candles.length - 1) * candleWidth + candleSpacing / 2 + actualCandleWidth / 2}
               cy={priceToY(candles[candles.length - 1].close)}
-              r={isMobile ? 3 : 4}
+              r={isSmallMobile ? 2 : isMobile ? 3 : 4}
               fill="#fbbf24"
-              opacity="0.8"
+              opacity="0.9"
+            >
+              <animate
+                attributeName="r"
+                values={isSmallMobile ? "2;4;2" : isMobile ? "3;5;3" : "4;6;4"}
+                dur="1.5s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="opacity"
+                values="0.9;0.5;0.9"
+                dur="1.5s"
+                repeatCount="indefinite"
+              />
+            </circle>
+            
+            {/* Current price label */}
+            <rect
+              x={width - (isSmallMobile ? 40 : isMobile ? 50 : 70)}
+              y={isSmallMobile ? 3 : isMobile ? 5 : 8}
+              width={isSmallMobile ? 36 : isMobile ? 45 : 62}
+              height={isSmallMobile ? 14 : isMobile ? 16 : 20}
+              rx="3"
+              fill="rgba(251, 191, 36, 0.2)"
+              stroke="#fbbf24"
+              strokeWidth="1"
             />
             <text
-              x={width - (isMobile ? 5 : 10)}
-              y={isMobile ? 18 : 25}
-              fontSize={isMobile ? 10 : 14}
+              x={width - (isSmallMobile ? 22 : isMobile ? 27 : 39)}
+              y={isSmallMobile ? 13 : isMobile ? 16 : 21}
+              fontSize={isSmallMobile ? 8 : isMobile ? 9 : 12}
               fill="#fbbf24"
               fontWeight="bold"
-              textAnchor="end"
+              textAnchor="middle"
             >
-              ${isMobile ? (Math.round(candles[candles.length - 1].close) / 1000).toFixed(1) + 'k' : Math.round(candles[candles.length - 1].close).toLocaleString()}
+              ${formatPrice(candles[candles.length - 1].close)}
             </text>
+          </g>
+        )}
+        
+        {/* Chart title/label */}
+        <text
+          x={leftPadding + 5}
+          y={isSmallMobile ? 10 : isMobile ? 12 : 16}
+          fontSize={isSmallMobile ? 8 : isMobile ? 9 : 11}
+          fill="rgba(255,255,255,0.4)"
+        >
+          {isTrading ? 'LIVE' : 'BTC/USD'}
+        </text>
+        
+        {/* Live indicator */}
+        {isTrading && (
+          <g>
+            <circle
+              cx={leftPadding + (isSmallMobile ? 30 : isMobile ? 35 : 45)}
+              cy={isSmallMobile ? 7 : isMobile ? 9 : 12}
+              r={isSmallMobile ? 2 : 3}
+              fill="#10b981"
+            >
+              <animate
+                attributeName="opacity"
+                values="1;0.3;1"
+                dur="1s"
+                repeatCount="indefinite"
+              />
+            </circle>
           </g>
         )}
       </svg>

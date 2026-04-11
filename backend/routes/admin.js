@@ -6,8 +6,6 @@ import Transaction from '../models/Transaction.js';
 import Investment from '../models/Investment.js';
 import Admin from '../models/Admin.js';
 import Wallet from '../models/Wallet.js';
-import adminReportService from '../services/adminReportService.js';
-import userBalanceService from '../services/userBalanceService.js';
 
 const router = express.Router();
 
@@ -381,10 +379,10 @@ router.post('/confirm-deposit/:transactionId', authenticate, authorize(['super_a
         return res.status(404).json({ message: 'Investment not found' });
       }
       
-      // Activate investment immediately
+      // Activate investment immediately - users can trade right away
       investment.status = 'active';
       investment.activatedAt = new Date();
-      investment.canTradeAfter = new Date(Date.now() + 24 * 60 * 60 * 1000); // Can trade after 24 hours
+      investment.canTradeAfter = new Date(); // Can trade immediately after activation
       investment.nextReturnDate = new Date(Date.now() + 24 * 60 * 60 * 1000); // First return after 24 hours
       
       const savedInvestment = await investment.save();
@@ -896,8 +894,50 @@ router.get('/users/status/:status', authenticate, authorize(['super_admin', 'adm
 // Get real-time user balance (Admin view)
 router.get('/users/:userId/balance', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
   try {
-    const balanceInfo = await adminReportService.getRealtimeUserBalance(req.params.userId);
-    res.json(balanceInfo);
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const activeInvestments = await Investment.find({
+      userId: req.params.userId,
+      status: 'active',
+      isWithdrawn: false
+    });
+
+    let totalLockedInTrades = 0;
+    activeInvestments.forEach(inv => {
+      if (inv.tradeInProgress) {
+        totalLockedInTrades += inv.lockedAmount || 0;
+      }
+    });
+
+    const pendingWithdrawals = await Transaction.find({
+      userId: req.params.userId,
+      type: 'withdrawal',
+      status: 'pending'
+    });
+
+    let totalPendingWithdrawal = 0;
+    pendingWithdrawals.forEach(tx => {
+      totalPendingWithdrawal += tx.amount || 0;
+    });
+
+    const availableBalance = Math.max(0, user.currentBalance - totalLockedInTrades - totalPendingWithdrawal);
+
+    res.json({
+      userId: req.params.userId,
+      email: user.email,
+      totalBalance: user.currentBalance,
+      availableBalance: availableBalance,
+      lockedInTrades: totalLockedInTrades,
+      pendingWithdrawal: totalPendingWithdrawal,
+      totalEarnings: user.totalEarnings || 0,
+      totalWithdrawn: user.totalWithdrawn || 0,
+      powaUpBalance: user.powaUpBalance || 0,
+      activeInvestments: activeInvestments.length,
+      lastUpdated: new Date()
+    });
   } catch (error) {
     console.error('[admin] Error getting user balance:', error);
     res.status(500).json({ message: 'Failed to fetch balance', error: error.message });
@@ -907,17 +947,31 @@ router.get('/users/:userId/balance', authenticate, authorize(['super_admin', 'ad
 // Get withdrawal log with filters
 router.get('/transactions/withdrawals', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
   try {
-    const filters = {
-      page: parseInt(req.query.page) || 0,
-      limit: parseInt(req.query.limit) || 50,
-      status: req.query.status || null,
-      startDate: req.query.startDate || null,
-      endDate: req.query.endDate || null,
-      userId: req.query.userId || null
-    };
-    
-    const withdrawalLog = await adminReportService.getWithdrawalLog(filters);
-    res.json(withdrawalLog);
+    const page = parseInt(req.query.page) || 0;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = page * limit;
+
+    let query = { type: 'withdrawal' };
+    if (req.query.status) query.status = req.query.status;
+    if (req.query.userId) query.userId = req.query.userId;
+
+    const withdrawals = await Transaction.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('userId', 'email firstName lastName');
+
+    const total = await Transaction.countDocuments(query);
+
+    res.json({
+      withdrawals,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error('[admin] Error getting withdrawal log:', error);
     res.status(500).json({ message: 'Failed to fetch withdrawal log', error: error.message });
@@ -927,16 +981,30 @@ router.get('/transactions/withdrawals', authenticate, authorize(['super_admin', 
 // Get PowaUp purchase log
 router.get('/transactions/powaup-purchases', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
   try {
-    const filters = {
-      page: parseInt(req.query.page) || 0,
-      limit: parseInt(req.query.limit) || 50,
-      startDate: req.query.startDate || null,
-      endDate: req.query.endDate || null,
-      userId: req.query.userId || null
-    };
-    
-    const purchaseLog = await adminReportService.getPowaUpPurchaseLog(filters);
-    res.json(purchaseLog);
+    const page = parseInt(req.query.page) || 0;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = page * limit;
+
+    let query = { type: 'powaup_purchase' };
+    if (req.query.userId) query.userId = req.query.userId;
+
+    const purchases = await Transaction.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('userId', 'email firstName lastName');
+
+    const total = await Transaction.countDocuments(query);
+
+    res.json({
+      purchases,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
   } catch (error) {
     console.error('[admin] Error getting PowaUp purchase log:', error);
     res.status(500).json({ message: 'Failed to fetch purchase log', error: error.message });
@@ -946,13 +1014,34 @@ router.get('/transactions/powaup-purchases', authenticate, authorize(['super_adm
 // Get dashboard metrics
 router.get('/dashboard/metrics', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
   try {
-    const dateRange = {
-      startDate: req.query.startDate || new Date(Date.now() - 24 * 60 * 60 * 1000),
-      endDate: req.query.endDate || new Date()
-    };
+    const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date();
+
+    const totalUsers = await User.countDocuments();
+    const activeUsers = await User.countDocuments({ lastLogin: { $gt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } });
     
-    const metrics = await adminReportService.getDashboardMetrics(dateRange);
-    res.json(metrics);
+    const withdrawals = await Transaction.find({
+      type: 'withdrawal',
+      createdAt: { $gte: startDate, $lte: endDate }
+    });
+
+    const powaupSales = await Transaction.find({
+      type: 'powaup_purchase',
+      createdAt: { $gte: startDate, $lte: endDate }
+    });
+
+    const totalWithdrawn = withdrawals.reduce((sum, tx) => sum + tx.amount, 0);
+    const totalPowaUpSales = powaupSales.reduce((sum, tx) => sum + tx.amount, 0);
+
+    res.json({
+      totalUsers,
+      activeUsers,
+      withdrawalCount: withdrawals.length,
+      totalWithdrawn,
+      powaupSalesCount: powaupSales.length,
+      totalPowaUpSales,
+      generatedAt: new Date()
+    });
   } catch (error) {
     console.error('[admin] Error getting metrics:', error);
     res.status(500).json({ message: 'Failed to fetch metrics', error: error.message });
@@ -962,8 +1051,17 @@ router.get('/dashboard/metrics', authenticate, authorize(['super_admin', 'admin'
 // Get pending withdrawals
 router.get('/withdrawals/pending', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
   try {
-    const pendingWithdrawals = await adminReportService.getPendingWithdrawals();
-    res.json(pendingWithdrawals);
+    const pendingWithdrawals = await Transaction.find({
+      type: 'withdrawal',
+      status: 'pending'
+    })
+      .sort({ createdAt: -1 })
+      .populate('userId', 'email firstName lastName');
+
+    res.json({
+      count: pendingWithdrawals.length,
+      withdrawals: pendingWithdrawals
+    });
   } catch (error) {
     console.error('[admin] Error getting pending withdrawals:', error);
     res.status(500).json({ message: 'Failed to fetch pending withdrawals', error: error.message });
@@ -977,9 +1075,16 @@ router.patch('/transactions/:transactionId/approve', authenticate, authorize(['s
     if (!transaction) {
       return res.status(404).json({ message: 'Transaction not found' });
     }
-    
-    const result = await userBalanceService.approveWithdrawal(transaction.userId, req.params.transactionId);
-    res.json(result);
+
+    transaction.status = 'approved';
+    transaction.approvedAt = new Date();
+    transaction.approvedBy = req.user.userId;
+    await transaction.save();
+
+    res.json({
+      message: 'Withdrawal approved',
+      transaction
+    });
   } catch (error) {
     console.error('[admin] Error approving withdrawal:', error);
     res.status(500).json({ message: 'Failed to approve withdrawal', error: error.message });
@@ -993,9 +1098,16 @@ router.patch('/transactions/:transactionId/complete', authenticate, authorize(['
     if (!transaction) {
       return res.status(404).json({ message: 'Transaction not found' });
     }
-    
-    const result = await userBalanceService.completeWithdrawal(transaction.userId, req.params.transactionId);
-    res.json(result);
+
+    transaction.status = 'completed';
+    transaction.completedAt = new Date();
+    transaction.completedBy = req.user.userId;
+    await transaction.save();
+
+    res.json({
+      message: 'Withdrawal completed',
+      transaction
+    });
   } catch (error) {
     console.error('[admin] Error completing withdrawal:', error);
     res.status(500).json({ message: 'Failed to complete withdrawal', error: error.message });
@@ -1005,13 +1117,23 @@ router.patch('/transactions/:transactionId/complete', authenticate, authorize(['
 // Get user cash flow summary
 router.get('/users/:userId/cash-flow', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
   try {
-    const dateRange = {
-      startDate: req.query.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      endDate: req.query.endDate || new Date()
-    };
-    
-    const cashFlow = await adminReportService.trackUserCashFlow(req.params.userId, dateRange);
-    res.json(cashFlow);
+    const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endDate = req.query.endDate ? new Date(req.query.endDate) : new Date();
+
+    const transactions = await Transaction.find({
+      userId: req.params.userId,
+      createdAt: { $gte: startDate, $lte: endDate }
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      userId: req.params.userId,
+      transactions,
+      summary: {
+        totalTransactions: transactions.length,
+        inflow: transactions.filter(t => t.type === 'returns').reduce((sum, t) => sum + t.amount, 0),
+        outflow: transactions.filter(t => t.type === 'withdrawal' || t.type === 'powaup_purchase').reduce((sum, t) => sum + t.amount, 0)
+      }
+    });
   } catch (error) {
     console.error('[admin] Error tracking cash flow:', error);
     res.status(500).json({ message: 'Failed to fetch cash flow', error: error.message });
@@ -1021,8 +1143,41 @@ router.get('/users/:userId/cash-flow', authenticate, authorize(['super_admin', '
 // Get user summary
 router.get('/users/:userId/summary', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
   try {
-    const summary = await adminReportService.getUserSummary(req.params.userId);
-    res.json(summary);
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const investments = await Investment.find({ userId: req.params.userId });
+    const transactions = await Transaction.find({ userId: req.params.userId });
+
+    res.json({
+      user: {
+        _id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        currentBalance: user.currentBalance,
+        totalEarnings: user.totalEarnings || 0,
+        totalWithdrawn: user.totalWithdrawn || 0,
+        powaUpBalance: user.powaUpBalance || 0,
+        status: user.status,
+        createdAt: user.createdAt
+      },
+      investments: {
+        count: investments.length,
+        active: investments.filter(i => i.status === 'active').length,
+        completed: investments.filter(i => i.status === 'completed').length,
+        total: investments.reduce((sum, i) => sum + i.amount, 0),
+        earnings: investments.reduce((sum, i) => sum + i.totalReturnsEarned, 0)
+      },
+      transactions: {
+        count: transactions.length,
+        withdrawals: transactions.filter(t => t.type === 'withdrawal').length,
+        powaupPurchases: transactions.filter(t => t.type === 'powaup_purchase').length,
+        returns: transactions.filter(t => t.type === 'returns').length
+      }
+    });
   } catch (error) {
     console.error('[admin] Error getting user summary:', error);
     res.status(500).json({ message: 'Failed to fetch user summary', error: error.message });
