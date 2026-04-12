@@ -257,11 +257,15 @@ router.post('/:id/trade/complete', authenticate, async (req, res) => {
     
     await investment.save();
     
-    // Update user balance
+    // Update user balance and track earnings
     const user = await User.findById(req.user.userId);
     user.currentBalance += profitAmount;
     user.totalEarnings = (user.totalEarnings || 0) + profitAmount;
+    user.investmentReturns = (user.investmentReturns || 0) + profitAmount;
+    user.tradingBonuses = (user.tradingBonuses || 0) + profitAmount;
     await user.save();
+    
+    console.log(`[v0] Trade completed: User ${req.user.userId}, Profit: $${profitAmount.toFixed(2)}, New Balance: $${user.currentBalance.toFixed(2)}`);
     
     // Create transaction record
     const transaction = new Transaction({

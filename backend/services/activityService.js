@@ -49,10 +49,22 @@ export const awardActivity = async (userId, activityType, rewardAmount = 0.5) =>
     
     await transaction.save();
     
-    // Update user balance
+    // Update user balance and track earnings based on activity type
     const user = await User.findById(userId);
     user.currentBalance += rewardAmount;
+    user.totalEarnings = (user.totalEarnings || 0) + rewardAmount;
+    user.totalBonusesEarned = (user.totalBonusesEarned || 0) + rewardAmount;
+    
+    // Track specific earnings categories
+    if (activityType === ACTIVITY_TYPES.REFERRAL) {
+      user.referralEarnings = (user.referralEarnings || 0) + rewardAmount;
+    } else if (activityType === ACTIVITY_TYPES.DAILY_GAME || activityType === ACTIVITY_TYPES.DAILY_SPIN) {
+      user.puzzleGameBonuses = (user.puzzleGameBonuses || 0) + rewardAmount;
+    }
+    
     await user.save();
+    
+    console.log(`[ActivityService] Awarded ${activityType} to user ${userId}: $${rewardAmount}`);
     
     return {
       success: true,

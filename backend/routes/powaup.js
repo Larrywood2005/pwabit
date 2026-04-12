@@ -3,7 +3,6 @@ import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
 import { authenticate } from '../middleware/auth.js';
 import balanceService from '../services/balanceService.js';
-import userBalanceService from '../services/userBalanceService.js';
 
 const router = express.Router();
 
@@ -62,42 +61,78 @@ router.post('/purchase', authenticate, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Validate balance using PowaUp-specific validation (only checks current balance, not locked funds)
-    const validation = await userBalanceService.validatePowaUpPurchase(userId, cost);
-    if (!validation.isValid) {
+    // Check if user has sufficient currentBalance for PowaUp purchase
+    // currentBalance includes all earnings (games, referrals, trading profits)
+    if (user.currentBalance < cost) {
+      console.log('[v0] PowaUp purchase insufficient balance:', {
+        userId,
+        currentBalance: user.currentBalance,
+        cost,
+        shortfall: cost - user.currentBalance
+      });
       return res.status(400).json({ 
-        message: validation.reason,
+        message: `Insufficient balance. You need $${cost.toFixed(2)} but have $${user.currentBalance?.toFixed(2) || 0} available.`,
         requiredBalance: cost,
-        currentBalance: validation.currentBalance
+        currentBalance: user.currentBalance || 0,
+        shortfall: cost - (user.currentBalance || 0)
       });
     }
     
-    // Process purchase using balance service
-    const purchaseResult = await userBalanceService.purchasePowaUp(userId, amount, cost);
+    // Process purchase - deduct from currentBalance and add PowaUp
+    const balanceBefore = user.currentBalance;
     
-    // Update PowaUp balance in user document
-    const updatedUser = await User.findById(userId);
-    updatedUser.powaUpHistory.push({
+    // Create transaction record
+    const transaction = new Transaction({
+      userId,
+      type: 'powaup_purchase',
+      amount: cost,
+      status: 'completed',
+      balanceBefore: balanceBefore,
+      balanceAfter: balanceBefore - cost,
+      details: {
+        powaUpAmount: amount,
+        pricePerPowaUp: POWAUP_PRICE,
+        timestamp: new Date()
+      }
+    });
+    await transaction.save();
+    
+    // Update user balances
+    user.currentBalance = balanceBefore - cost;
+    user.powaUpBalance = (user.powaUpBalance || 0) + amount;
+    user.totalPowaUpPurchased = (user.totalPowaUpPurchased || 0) + amount;
+    user.totalSpentOnPowaUp = (user.totalSpentOnPowaUp || 0) + cost;
+    
+    // Add to PowaUp history
+    user.powaUpHistory.push({
       type: 'purchased',
       amount: amount,
       cost: cost,
       reason: `Purchased ${amount} PowaUp at $${POWAUP_PRICE} each`,
-      transactionId: purchaseResult.transactionId,
+      transactionId: transaction._id,
       timestamp: new Date()
     });
-    await updatedUser.save();
+    
+    await user.save();
     
     // Get updated balance info
     const balanceInfo = await balanceService.calculateAvailableBalance(userId);
     
-    console.log('[v0] PowaUp purchase successful:', { userId, amount, cost, transactionId: purchaseResult.transactionId });
+    console.log('[v0] PowaUp purchase successful:', { 
+      userId, 
+      amount, 
+      cost, 
+      newBalance: user.currentBalance,
+      newPowaUpBalance: user.powaUpBalance,
+      transactionId: transaction._id 
+    });
     
     res.json({
       message: `Successfully purchased ${amount} PowaUp`,
-      powaUpBalance: purchaseResult.newPowaUpBalance,
-      newBalance: purchaseResult.newBalance,
+      powaUpBalance: user.powaUpBalance,
+      newBalance: user.currentBalance,
       availableBalance: balanceInfo.availableBalance,
-      transactionId: purchaseResult.transactionId
+      transactionId: transaction._id
     });
   } catch (error) {
     console.error('[v0] PowaUp purchase error:', error);

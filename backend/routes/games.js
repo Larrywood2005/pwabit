@@ -42,19 +42,30 @@ router.post('/claim-daily-login', authenticate, async (req, res) => {
     });
     await reward.save();
 
-    // Update user balance - add to currentBalance for real account earnings
+    // Update user balance - add to currentBalance and track as puzzle game bonus
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { $inc: { currentBalance: rewardAmount } },
+      { 
+        $inc: { 
+          currentBalance: rewardAmount,
+          puzzleGameBonuses: rewardAmount,
+          totalBonusesEarned: rewardAmount,
+          totalEarnings: rewardAmount
+        } 
+      },
       { new: true }
     );
+
+    console.log(`[v0] Daily login reward claimed: User ${userId}, Amount: $${rewardAmount}, New Balance: $${updatedUser?.currentBalance}`);
 
     res.json({
       message: 'Daily login reward claimed successfully',
       reward: {
         amount: rewardAmount,
         type: 'daily-login',
-        newBalance: updatedUser?.currentBalance || 0
+        newBalance: updatedUser?.currentBalance || 0,
+        totalEarnings: updatedUser?.totalEarnings || 0,
+        puzzleGameBonuses: updatedUser?.puzzleGameBonuses || 0
       }
     });
   } catch (error) {
@@ -101,19 +112,30 @@ router.post('/claim-puzzle-win', authenticate, async (req, res) => {
     });
     await reward.save();
 
-    // Update user balance - add to currentBalance for real account earnings
+    // Update user balance - add to currentBalance and track as puzzle game bonus
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      { $inc: { currentBalance: rewardAmount } },
+      { 
+        $inc: { 
+          currentBalance: rewardAmount,
+          puzzleGameBonuses: rewardAmount,
+          totalBonusesEarned: rewardAmount,
+          totalEarnings: rewardAmount
+        } 
+      },
       { new: true }
     );
+
+    console.log(`[v0] Puzzle win reward claimed: User ${userId}, Amount: $${rewardAmount}, New Balance: $${updatedUser?.currentBalance}`);
 
     res.json({
       message: 'Puzzle reward claimed successfully',
       reward: {
         amount: rewardAmount,
         type: 'puzzle-win',
-        newBalance: updatedUser?.currentBalance || 0
+        newBalance: updatedUser?.currentBalance || 0,
+        totalEarnings: updatedUser?.totalEarnings || 0,
+        puzzleGameBonuses: updatedUser?.puzzleGameBonuses || 0
       }
     });
   } catch (error) {
