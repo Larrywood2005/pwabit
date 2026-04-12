@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { Wallet, TrendingUp, ArrowDown, Zap, AlertCircle, RefreshCw, Wifi, WifiOff, Clock } from 'lucide-react';
+import { Wallet, TrendingUp, ArrowDown, Zap, RefreshCw, Wifi, WifiOff, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import { io, Socket } from 'socket.io-client';
+
+// Socket type (avoid direct import to prevent SSR issues)
+type Socket = any;
 
 interface BalanceData {
   totalBalance: number;
@@ -90,52 +92,81 @@ export function RealtimeBalanceCard({ onWithdrawClick, onPowaUpClick }: Realtime
     await fetchBalanceData();
   };
 
-  // Socket.io connection for real-time updates
+  // Socket.io connection for real-time updates (optional enhancement)
   useEffect(() => {
-    if (!user?.id) return;
+    // Skip socket connection if no user or no valid backend URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!user?.id || !apiUrl || apiUrl === 'http://localhost:5000/api') return;
 
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    let mounted = true;
     
-    try {
-      socketRef.current = io(backendUrl, {
-        path: '/socket.io',
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-      });
+    const setupSocket = async () => {
+      try {
+        const { io } = await import('socket.io-client');
+        const backendUrl = apiUrl.replace('/api', '');
+        
+        if (!mounted || !backendUrl) return;
+        
+        socketRef.current = io(backendUrl, {
+          path: '/socket.io',
+          transports: ['polling', 'websocket'],
+          reconnection: true,
+          reconnectionAttempts: 2,
+          reconnectionDelay: 3000,
+          timeout: 5000,
+        });
 
-      socketRef.current.on('connect', () => {
-        setIsConnected(true);
-        socketRef.current?.emit('join', user.id);
-      });
+        socketRef.current.on('connect', () => {
+          if (mounted) {
+            setIsConnected(true);
+            socketRef.current?.emit('join', user.id);
+          }
+        });
 
-      socketRef.current.on('disconnect', () => {
-        setIsConnected(false);
-      });
+        socketRef.current.on('disconnect', () => {
+          if (mounted) setIsConnected(false);
+        });
 
-      // Listen for real-time balance updates
-      socketRef.current.on('balanceUpdated', (data: { totalBalance: number; availableBalance: number }) => {
-        setBalanceData(prev => prev ? {
-          ...prev,
-          totalBalance: Math.max(0, data.totalBalance || prev.totalBalance),
-          availableBalance: Math.max(0, data.availableBalance || prev.availableBalance),
-        } : null);
-      });
+        socketRef.current.on('connect_error', () => {
+          if (mounted) setIsConnected(false);
+          // Stop reconnection on error
+          if (socketRef.current) {
+            socketRef.current.disconnect();
+          }
+        });
 
-      // Listen for new transactions - trigger full refetch
-      socketRef.current.on('newTransaction', () => {
-        fetchBalanceData();
-      });
+        // Listen for real-time balance updates
+        socketRef.current.on('balanceUpdated', (data: { totalBalance: number; availableBalance: number }) => {
+          if (mounted) {
+            setBalanceData(prev => prev ? {
+              ...prev,
+              totalBalance: Math.max(0, data.totalBalance || prev.totalBalance),
+              availableBalance: Math.max(0, data.availableBalance || prev.availableBalance),
+            } : null);
+          }
+        });
 
-    } catch (err) {
-      console.error('[RealtimeBalanceCard] Socket setup error:', err);
-    }
+        // Listen for new transactions - trigger full refetch
+        socketRef.current.on('newTransaction', () => {
+          if (mounted) fetchBalanceData();
+        });
+
+      } catch (err) {
+        // Silently fail - socket is optional
+      }
+    };
+
+    setupSocket();
 
     return () => {
+      mounted = false;
       if (socketRef.current) {
-        socketRef.current.emit('leave', user.id);
-        socketRef.current.disconnect();
+        try {
+          socketRef.current.emit('leave', user.id);
+          socketRef.current.disconnect();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
         socketRef.current = null;
       }
     };

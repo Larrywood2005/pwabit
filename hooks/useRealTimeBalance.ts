@@ -1,14 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/hooks/useAuth';
 
-interface BalanceInfo {
-  totalBalance: number;
-  availableBalance: number;
-  lockedInTrades: number;
-  pendingWithdrawal: number;
-  lastUpdated: string;
-}
+// Socket type (avoiding direct import issues)
+type Socket = any;
 
 interface UserBalance {
   totalBalance: number;
@@ -33,9 +27,16 @@ interface UseRealTimeBalanceReturn {
   isConnected: boolean;
 }
 
+// Check if socket should be enabled
+const isSocketEnabled = () => {
+  if (typeof window === 'undefined') return false;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  return Boolean(apiUrl && apiUrl !== 'http://localhost:5000/api');
+};
+
 /**
  * Hook to fetch and manage real-time user balance
- * Uses Socket.io for instant updates with polling fallback every 10 seconds
+ * Uses polling as primary method with optional Socket.io for instant updates
  */
 export function useRealTimeBalance(): UseRealTimeBalanceReturn {
   const { user } = useAuth();
@@ -44,6 +45,7 @@ export function useRealTimeBalance(): UseRealTimeBalanceReturn {
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const socketInitializedRef = useRef(false);
 
   // Fetch balance with non-negative value guarantee
   const fetchBalance = useCallback(async () => {
@@ -133,65 +135,81 @@ export function useRealTimeBalance(): UseRealTimeBalanceReturn {
     }
   }, [balance]);
 
-  // Setup Socket.io connection for real-time updates
+  // Setup Socket.io connection for real-time updates (optional enhancement)
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !isSocketEnabled() || socketInitializedRef.current) return;
 
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
-    
-    try {
-      socketRef.current = io(backendUrl, {
-        path: '/socket.io',
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        timeout: 10000,
-      });
+    const setupSocket = async () => {
+      try {
+        socketInitializedRef.current = true;
+        const { io } = await import('socket.io-client');
+        
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
+        
+        if (!backendUrl) return;
+        
+        socketRef.current = io(backendUrl, {
+          path: '/socket.io',
+          transports: ['polling', 'websocket'],
+          reconnection: true,
+          reconnectionAttempts: 2,
+          reconnectionDelay: 3000,
+          timeout: 5000,
+          forceNew: false,
+        });
 
-      socketRef.current.on('connect', () => {
-        console.log('[useRealTimeBalance] Socket connected');
-        setIsConnected(true);
-        socketRef.current?.emit('join', user.id);
-      });
+        socketRef.current.on('connect', () => {
+          setIsConnected(true);
+          if (socketRef.current) {
+            socketRef.current.emit('join', user.id);
+          }
+        });
 
-      socketRef.current.on('disconnect', () => {
-        console.log('[useRealTimeBalance] Socket disconnected');
-        setIsConnected(false);
-      });
+        socketRef.current.on('disconnect', () => {
+          setIsConnected(false);
+        });
 
-      socketRef.current.on('connect_error', (error) => {
-        console.error('[useRealTimeBalance] Socket connection error:', error.message);
-        setIsConnected(false);
-      });
+        socketRef.current.on('connect_error', () => {
+          setIsConnected(false);
+          // Stop trying to reconnect on error
+          if (socketRef.current) {
+            socketRef.current.disconnect();
+          }
+        });
 
-      // Listen for balance updates - immediately update local state
-      socketRef.current.on('balanceUpdated', (data: { totalBalance: number; availableBalance: number }) => {
-        console.log('[useRealTimeBalance] Real-time balance update:', data);
-        setBalance(prev => prev ? {
-          ...prev,
-          totalBalance: Math.max(0, data.totalBalance || prev.totalBalance),
-          availableBalance: Math.max(0, data.availableBalance || prev.availableBalance),
-        } : null);
-        // Also refetch to get complete data
-        fetchBalance();
-      });
+        // Listen for balance updates - immediately update local state
+        socketRef.current.on('balanceUpdated', (data: { totalBalance: number; availableBalance: number }) => {
+          setBalance(prev => prev ? {
+            ...prev,
+            totalBalance: Math.max(0, data.totalBalance || prev.totalBalance),
+            availableBalance: Math.max(0, data.availableBalance || prev.availableBalance),
+          } : null);
+          fetchBalance();
+        });
 
-      // Listen for new transactions - trigger balance refetch
-      socketRef.current.on('newTransaction', () => {
-        console.log('[useRealTimeBalance] New transaction received, refetching balance');
-        fetchBalance();
-      });
+        // Listen for new transactions - trigger balance refetch
+        socketRef.current.on('newTransaction', () => {
+          fetchBalance();
+        });
 
-    } catch (err) {
-      console.error('[useRealTimeBalance] Socket setup error:', err);
-    }
+      } catch (err) {
+        // Silently fail - socket is optional
+        socketInitializedRef.current = false;
+      }
+    };
+
+    setupSocket();
 
     return () => {
       if (socketRef.current) {
-        socketRef.current.emit('leave', user.id);
-        socketRef.current.disconnect();
+        try {
+          socketRef.current.emit('leave', user.id);
+          socketRef.current.disconnect();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
         socketRef.current = null;
+        socketInitializedRef.current = false;
       }
     };
   }, [user?.id, fetchBalance]);

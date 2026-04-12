@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/hooks/useAuth';
+
+// Socket.io types (avoiding import issues)
+type Socket = any;
 
 interface BalanceUpdate {
   totalBalance: number;
@@ -26,88 +28,118 @@ interface UseSocketOptions {
   onTransactionUpdated?: (data: { id: string; status: string; updatedAt: Date }) => void;
 }
 
+// Check if socket.io is available and backend is configured
+const isSocketEnabled = () => {
+  if (typeof window === 'undefined') return false;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  // Only enable socket if we have a valid backend URL configured
+  return Boolean(apiUrl && apiUrl !== 'http://localhost:5000/api');
+};
+
 export const useSocket = (options: UseSocketOptions = {}) => {
   const { user } = useAuth();
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const connectAttemptedRef = useRef(false);
 
-  const connect = useCallback(() => {
-    if (socketRef.current?.connected) return;
+  const connect = useCallback(async () => {
+    // Prevent multiple connection attempts
+    if (connectAttemptedRef.current || socketRef.current?.connected) return;
+    
+    // Skip socket connection if not enabled
+    if (!isSocketEnabled()) {
+      return;
+    }
+
+    connectAttemptedRef.current = true;
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+      // Dynamically import socket.io-client to avoid SSR issues
+      const { io } = await import('socket.io-client');
+      
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || '';
+      
+      if (!backendUrl) {
+        return;
+      }
       
       socketRef.current = io(backendUrl, {
         path: '/socket.io',
         transports: ['polling', 'websocket'],
         reconnection: true,
-        reconnectionAttempts: 3,
-        reconnectionDelay: 2000,
-        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 2,
+        reconnectionDelay: 3000,
+        reconnectionDelayMax: 10000,
         timeout: 5000,
         autoConnect: true,
+        forceNew: false,
       });
 
       socketRef.current.on('connect', () => {
-        console.log('[Socket] Connected:', socketRef.current?.id);
         setIsConnected(true);
         setConnectionError(null);
 
         // Join user-specific room
-        if (user?.id) {
-          socketRef.current?.emit('join', user.id);
+        if (user?.id && socketRef.current) {
+          socketRef.current.emit('join', user.id);
         }
       });
 
-      socketRef.current.on('disconnect', (reason) => {
-        console.log('[Socket] Disconnected:', reason);
+      socketRef.current.on('disconnect', () => {
         setIsConnected(false);
       });
 
       socketRef.current.on('connect_error', (error: any) => {
-        console.error('[Socket] Connection error:', error?.message);
+        // Silently handle connection errors - socket is optional
         setConnectionError(error?.message || 'Connection failed');
         setIsConnected(false);
+        // Stop reconnection attempts after first failure to avoid console spam
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+        }
       });
 
       // Listen for balance updates
       socketRef.current.on('balanceUpdated', (data: BalanceUpdate) => {
-        console.log('[Socket] Balance updated:', data);
         options.onBalanceUpdate?.(data);
       });
 
       // Listen for new transactions
       socketRef.current.on('newTransaction', (data: TransactionUpdate) => {
-        console.log('[Socket] New transaction:', data);
         options.onNewTransaction?.(data);
       });
 
       // Listen for transaction status updates
       socketRef.current.on('transactionUpdated', (data: { id: string; status: string; updatedAt: Date }) => {
-        console.log('[Socket] Transaction updated:', data);
         options.onTransactionUpdated?.(data);
       });
     } catch (error: any) {
-      console.error('[Socket] Connection setup error:', error?.message);
+      // Silently fail - socket is optional functionality
       setConnectionError(error?.message || 'Failed to initialize socket');
+      connectAttemptedRef.current = false;
     }
   }, [user?.id, options]);
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {
-      if (user?.id) {
-        socketRef.current.emit('leave', user.id);
+      try {
+        if (user?.id) {
+          socketRef.current.emit('leave', user.id);
+        }
+        socketRef.current.disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
       }
-      socketRef.current.disconnect();
       socketRef.current = null;
       setIsConnected(false);
+      connectAttemptedRef.current = false;
     }
   }, [user?.id]);
 
   // Auto-connect when user is authenticated
   useEffect(() => {
-    if (user?.id) {
+    if (user?.id && isSocketEnabled()) {
       connect();
     }
 
@@ -119,7 +151,11 @@ export const useSocket = (options: UseSocketOptions = {}) => {
   // Re-join room when user changes
   useEffect(() => {
     if (isConnected && user?.id && socketRef.current) {
-      socketRef.current.emit('join', user.id);
+      try {
+        socketRef.current.emit('join', user.id);
+      } catch (e) {
+        // Ignore emit errors
+      }
     }
   }, [isConnected, user?.id]);
 
