@@ -7,6 +7,7 @@ import Investment from '../models/Investment.js';
 import Admin from '../models/Admin.js';
 import Wallet from '../models/Wallet.js';
 import balanceService from '../services/balanceService.js';
+import transactionLogger from '../services/transactionLogger.js';
 
 const router = express.Router();
 
@@ -576,6 +577,16 @@ router.post('/confirm-deposit/:transactionId', authenticate, authorize(['super_a
             await tier1Referrer.save();
             console.log('[v0] Tier 1 referral commission paid:', tier1Commission, 'to user:', tier1Referrer._id);
 
+            // Log transaction with balance snapshot
+            await transactionLogger.logBalanceTransaction(tier1Referrer._id, 'referral_commission_tier1', tier1Commission, {
+              tier: 1,
+              percentage: 5,
+              referredUserId: user._id,
+              investmentAmount: investmentAmount,
+              description: `Tier 1 referral commission (5%) from ${user.fullName}`,
+              source: 'investment_confirmation'
+            });
+
             // Create transaction record for commission
             await Transaction.create({
               userId: tier1Referrer._id,
@@ -615,6 +626,16 @@ router.post('/confirm-deposit/:transactionId', authenticate, authorize(['super_a
                 await tier2Referrer.save();
                 console.log('[v0] Tier 2 referral commission paid:', tier2Commission, 'to user:', tier2Referrer._id);
 
+                // Log transaction with balance snapshot
+                await transactionLogger.logBalanceTransaction(tier2Referrer._id, 'referral_commission_tier2', tier2Commission, {
+                  tier: 2,
+                  percentage: 2,
+                  referredUserId: user._id,
+                  investmentAmount: investmentAmount,
+                  description: `Tier 2 referral commission (2%) from ${user.fullName}`,
+                  source: 'investment_confirmation'
+                });
+
                 await Transaction.create({
                   userId: tier2Referrer._id,
                   type: 'referral_commission',
@@ -652,6 +673,16 @@ router.post('/confirm-deposit/:transactionId', authenticate, authorize(['super_a
 
                     await tier3Referrer.save();
                     console.log('[v0] Tier 3 referral commission paid:', tier3Commission, 'to user:', tier3Referrer._id);
+
+                    // Log transaction with balance snapshot
+                    await transactionLogger.logBalanceTransaction(tier3Referrer._id, 'referral_commission_tier3', tier3Commission, {
+                      tier: 3,
+                      percentage: 1,
+                      referredUserId: user._id,
+                      investmentAmount: investmentAmount,
+                      description: `Tier 3 referral commission (1%) from ${user.fullName}`,
+                      source: 'investment_confirmation'
+                    });
 
                     await Transaction.create({
                       userId: tier3Referrer._id,

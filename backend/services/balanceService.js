@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import Investment from '../models/Investment.js';
 import Transaction from '../models/Transaction.js';
 import Activity from '../models/Activity.js';
+import transactionLogger from './transactionLogger.js';
 
 /**
  * Balance Service - Handles all balance calculations and management
@@ -219,6 +220,16 @@ export const updateBalanceOnWithdrawal = async (userId, amount, withdrawalDetail
     // Log activity
     console.log(`[balanceService] Withdrawal created for user ${userId}: $${amount.toFixed(2)}, New Balance: $${user.currentBalance.toFixed(2)}, Available was: $${balanceInfo.availableBalance.toFixed(2)}, Transaction: ${transaction._id}, Message: Validated against availableBalance (SINGLE SOURCE OF TRUTH)`);
 
+    // Log transaction with balance snapshot
+    await transactionLogger.logBalanceTransaction(userId, 'withdrawal', amount, {
+      status: 'pending',
+      validatedAgainstAvailable: balanceInfo.availableBalance,
+      lockedInTrades: balanceInfo.lockedInTrades,
+      pendingWithdrawals: balanceInfo.pendingWithdrawal,
+      transactionId: transaction._id,
+      source: 'withdrawal_request'
+    });
+
     return {
       success: true,
       transactionId: transaction._id,
@@ -292,6 +303,17 @@ export const updateBalanceOnPowaUpPurchase = async (userId, amount, cost, purcha
       availableBalanceUsed: availableBalance,
       transactionId: transaction._id,
       message: 'Purchase validated against availableBalance (SINGLE SOURCE OF TRUTH)'
+    });
+
+    // Log transaction with balance snapshot
+    await transactionLogger.logBalanceTransaction(userId, 'powaup_purchase', cost, {
+      powaUpAmount: amount,
+      costPerUnit: (cost / amount).toFixed(2),
+      validatedAgainstAvailable: availableBalance,
+      lockedInTrades: balanceInfo.lockedInTrades,
+      pendingWithdrawals: balanceInfo.pendingWithdrawal,
+      transactionId: transaction._id,
+      source: 'powaup_purchase'
     });
 
     return {

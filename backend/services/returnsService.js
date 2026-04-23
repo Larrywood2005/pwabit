@@ -1,6 +1,7 @@
 import Investment from '../models/Investment.js';
 import Transaction from '../models/Transaction.js';
 import User from '../models/User.js';
+import transactionLogger from './transactionLogger.js';
 
 // Calculate daily returns for all active investments
 export const calculateDailyReturns = async () => {
@@ -85,6 +86,14 @@ export const calculateDailyReturns = async () => {
         balanceAfter: user.currentBalance.toFixed(2),
         earningsBefore: earningsBefore.toFixed(2),
         earningsAfter: user.totalEarnings.toFixed(2)
+      });
+
+      // Log transaction with balance snapshot
+      await transactionLogger.logBalanceTransaction(user._id, 'investment_return', dailyReturn, {
+        investmentId: investment._id,
+        dailyReturnPercent: investment.dailyReturnPercent,
+        description: `Daily return: ${investment.dailyReturnPercent}% on $${investment.amount.toFixed(2)}`,
+        transactionId: transaction._id
       });
     }
   } catch (error) {

@@ -1,6 +1,7 @@
 import Activity from '../models/Activity.js';
 import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
+import transactionLogger from './transactionLogger.js';
 
 const ACTIVITY_TYPES = {
   DAILY_SPIN: 'daily_spin',
@@ -63,6 +64,13 @@ export const awardActivity = async (userId, activityType, rewardAmount = 0.5) =>
     }
     
     await user.save();
+    
+    // Log transaction with balance snapshot
+    await transactionLogger.logBalanceTransaction(userId, 'activity_reward', rewardAmount, {
+      activityType: activityType,
+      description: `Activity reward: ${activityType}`,
+      transactionId: transaction._id
+    });
     
     console.log(`[ActivityService] Awarded ${activityType} to user ${userId}: $${rewardAmount}`);
     

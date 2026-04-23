@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticate } from '../middleware/auth.js';
 import GameReward from '../models/GameReward.js';
 import User from '../models/User.js';
+import transactionLogger from '../services/transactionLogger.js';
 
 const router = express.Router();
 
@@ -83,6 +84,13 @@ router.post('/claim-daily-login', authenticate, async (req, res) => {
       balanceAfter: (updatedUser?.currentBalance || 0).toFixed(2),
       lastClaimAt: updatedUser?.lastDailyLoginClaimAt,
       nextClaimTime: new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    });
+
+    // Log transaction with balance snapshot
+    await transactionLogger.logBalanceTransaction(updatedUser?._id, 'daily_login_bonus', rewardAmount, {
+      rewardType: 'daily-login',
+      description: 'Daily login bonus ($0.03)',
+      rewardId: reward._id
     });
 
     res.json({
@@ -210,6 +218,13 @@ router.post('/claim-puzzle-win', authenticate, async (req, res) => {
       gameRewardCount: updatedUser?.gameRewardCount,
       lastGamePlayedAt: updatedUser?.lastGamePlayedAt,
       nextGamePlayTime: updatedUser?.nextGamePlayTime
+    });
+
+    // Log transaction with balance snapshot
+    await transactionLogger.logBalanceTransaction(updatedUser?._id, 'puzzle_game_bonus', rewardAmount, {
+      rewardType: 'puzzle-win',
+      description: 'Puzzle game reward ($0.03)',
+      rewardId: reward._id
     });
 
     res.json({
