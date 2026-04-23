@@ -99,12 +99,12 @@ export function AvailableBalanceWidget() {
         </div>
       </Card>
 
-      {/* Total Balance Card */}
+      {/* Current Balance Card */}
       <Card className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <p className="text-xs font-medium text-blue-700 uppercase tracking-wider">
-              Total Balance
+              Current Balance
             </p>
             <p className="text-2xl font-bold text-blue-900 mt-2">
               ${formattedTotal}

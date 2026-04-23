@@ -258,11 +258,11 @@ export function RealtimeBalanceCard({ onWithdrawClick, onPowaUpClick }: Realtime
         </Button>
       </div>
 
-      {/* Total Balance Card - Shows full portfolio value (invested + earnings + cash) */}
+      {/* Current Balance Card - Shows full portfolio value (invested + earnings + cash) */}
       <div className="rounded-lg border border-border bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20 p-3 sm:p-4 md:p-6">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground">Total Balance</p>
+            <p className="text-[10px] sm:text-xs md:text-sm font-medium text-muted-foreground">Current Balance</p>
             <p className="mt-1 sm:mt-2 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-blue-600 break-words">{formatCurrency(totalBalance)}</p>
             <p className="mt-1 text-[9px] sm:text-[10px] md:text-xs text-muted-foreground">
               Invested + Earnings + Cash
@@ -280,7 +280,7 @@ export function RealtimeBalanceCard({ onWithdrawClick, onPowaUpClick }: Realtime
         <div className="rounded-lg border border-border bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/20 p-2.5 sm:p-3 md:p-4">
           <div className="flex items-start justify-between gap-1.5">
             <div className="flex-1 min-w-0">
-              <p className="text-[9px] sm:text-[10px] md:text-xs font-medium text-muted-foreground">Available</p>
+              <p className="text-[9px] sm:text-[10px] md:text-xs font-medium text-muted-foreground">Available Balance</p>
               <p className="mt-0.5 sm:mt-1 text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-green-600 break-words leading-tight">{formatCurrency(availableBalance)}</p>
             </div>
             <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-green-600 flex-shrink-0" />
