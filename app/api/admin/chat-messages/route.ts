@@ -4,6 +4,8 @@ import ChatMessage from '@/backend/models/ChatMessage';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[DEBUG] Admin chat-messages GET request received');
+    
     await connectDB();
     
     const { searchParams } = new URL(request.url);
@@ -84,6 +86,8 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    console.log('[DEBUG] Admin chat-messages PUT request received');
+    
     await connectDB();
     
     const body = await request.json();

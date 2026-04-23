@@ -30,6 +30,9 @@ export function GiveawayModal({
   const [recipientInfo, setRecipientInfo] = useState<any>(null);
   const [validatingRecipient, setValidatingRecipient] = useState(false);
   const [step, setStep] = useState<'select' | 'confirm' | 'otp'>('select');
+  const [requestingOtp, setRequestingOtp] = useState(false);
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [otpExpireTime, setOtpExpireTime] = useState<Date | null>(null);
 
   if (!isOpen) return null;
 
@@ -53,6 +56,33 @@ export function GiveawayModal({
       } finally {
         setValidatingRecipient(false);
       }
+    }
+  };
+
+  const handleRequestOtp = async () => {
+    try {
+      setRequestingOtp(true);
+      setError('');
+
+      const response = await apiClient.requestWithdrawalOTP();
+      
+      if (response.message || response.requiresOTP) {
+        setOtpRequested(true);
+        // Set OTP expiration to 10 minutes from now
+        const expireTime = new Date(Date.now() + 10 * 60 * 1000);
+        setOtpExpireTime(expireTime);
+        
+        // Show success message
+        const successMsg = `OTP sent to your email. It will expire in 10 minutes.`;
+        console.log('[v0] OTP Request Success:', successMsg);
+      } else {
+        setError('Failed to send OTP. Please try again.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to request OTP');
+      console.error('[v0] OTP Request Error:', err);
+    } finally {
+      setRequestingOtp(false);
     }
   };
 
@@ -218,18 +248,32 @@ export function GiveawayModal({
           {type === 'usd' && (
             <div>
               <label className='block text-sm font-semibold text-foreground mb-2'>Withdrawal OTP</label>
-              <p className='text-xs text-muted-foreground mb-2'>
-                Enter the OTP sent to your email for security verification
+              <p className='text-xs text-muted-foreground mb-3'>
+                {otpRequested 
+                  ? `OTP sent to your email. Expires in ${otpExpireTime ? Math.max(0, Math.ceil((otpExpireTime.getTime() - Date.now()) / 60000)) : 10} minutes.`
+                  : 'Enter the OTP sent to your email for security verification'}
               </p>
-              <input
-                type='text'
-                placeholder='Enter 6-digit OTP'
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                maxLength={6}
-                className='w-full px-4 py-2 rounded-lg bg-muted border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary'
-                disabled={loading}
-              />
+              
+              {!otpRequested ? (
+                <button
+                  type='button'
+                  onClick={handleRequestOtp}
+                  disabled={requestingOtp || loading}
+                  className='w-full px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all mb-3'
+                >
+                  {requestingOtp ? 'Sending OTP...' : 'Request OTP'}
+                </button>
+              ) : (
+                <input
+                  type='text'
+                  placeholder='Enter 6-digit OTP'
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.slice(0, 6))}
+                  maxLength={6}
+                  className='w-full px-4 py-2 rounded-lg bg-muted border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary'
+                  disabled={loading}
+                />
+              )}
             </div>
           )}
 
@@ -255,11 +299,11 @@ export function GiveawayModal({
             </button>
             <button
               onClick={handleSendGiveaway}
-              disabled={loading || !recipientInfo || !amount || (type === 'usd' && !otp)}
+              disabled={loading || !recipientInfo || !amount || (type === 'usd' && (!otpRequested || !otp)) || requestingOtp}
               className='flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2'
             >
               <Send size={18} />
-              {loading ? 'Sending...' : 'Send'}
+              {loading ? 'Sending...' : type === 'usd' && !otpRequested ? 'Request OTP First' : 'Send'}
             </button>
           </div>
         </div>

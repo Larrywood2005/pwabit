@@ -877,6 +877,15 @@ class ApiClient {
   }
 
   // Giveaway endpoints
+  async requestWithdrawalOTP() {
+    try {
+      const response = await this.client.post('/auth/request-withdrawal-otp', {});
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async sendGiveaway(userCode: string, amount: number, type: 'usd' | 'powaup', otp?: string) {
     try {
       const payload: any = { userCode, amount, type };

@@ -42,7 +42,17 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
         url: `/api/admin/chat-messages?unreadOnly=${unreadOnly}&limit=100`
       });
       
-      const response = await fetch(`/api/admin/chat-messages?unreadOnly=${unreadOnly}&limit=100`);
+      // Get auth token from localStorage
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      
+      const response = await fetch(`/api/admin/chat-messages?unreadOnly=${unreadOnly}&limit=100`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        credentials: 'include'
+      });
       
       // Check if response is ok and is JSON
       if (!response.ok) {
@@ -101,9 +111,16 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
 
   const handleMarkResolved = async (messageId: string) => {
     try {
+      // Get auth token from localStorage
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      
       const response = await fetch('/api/admin/chat-messages', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        credentials: 'include',
         body: JSON.stringify({ messageId, isResolved: true })
       });
 
