@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     icon: [
       {
         url: '/Favicon-v2.png',
-        type: 'image/svg+xml',
+        type: 'image/png',
       },
     ],
   },
