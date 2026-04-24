@@ -18,13 +18,17 @@ const investmentSchema = new mongoose.Schema({
   
   // Return Tracking
   totalReturnsEarned: { type: Number, default: 0 },
-  lastReturnDate: Date,
+  lastReturnDate: Date, // CRITICAL: ISO timestamp in UTC - single source of truth for 24h check
   nextReturnDate: Date,
   returnHistory: [{
     date: Date,
     amount: Number,
     compounded: Boolean
   }],
+  
+  // Atomic Lock for ROI Processing (prevents duplicate payouts on concurrent execution)
+  processingReturn: { type: Boolean, default: false },
+  processingReturnStartedAt: Date,
   
   // Activation & Withdrawal Lock
   activatedAt: Date, // When investment becomes active
