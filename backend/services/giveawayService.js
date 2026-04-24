@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
+import balanceService from './balanceService.js';
 import mongoose from 'mongoose';
 
 /**
@@ -9,7 +10,8 @@ import mongoose from 'mongoose';
 
 /**
  * Send USD giveaway (requires OTP verification)
- * Flow: Find recipient → Verify OTP → Deduct sender balance → Add to receiver → Create transactions
+ * Flow: Find recipient → Verify OTP → Calculate availableBalance → Deduct sender balance → Add to receiver → Create transactions
+ * CRITICAL FIX: Uses availableBalance (SINGLE SOURCE OF TRUTH) instead of currentBalance for validation
  */
 export const sendUSDGiveaway = async (senderId, recipientUserCode, amount, otp) => {
   const session = await mongoose.startSession();
@@ -51,14 +53,36 @@ export const sendUSDGiveaway = async (senderId, recipientUserCode, amount, otp) 
       throw new Error('[v0] Cannot send giveaway to yourself');
     }
     
-    // Validate sender balance
-    const senderBalance = sender.currentBalance || 0;
-    if (senderBalance < amount) {
-      throw new Error(`[v0] Insufficient balance. You have $${senderBalance.toFixed(2)} but need $${amount.toFixed(2)}`);
+    // ============================================
+    // CRITICAL FIX: Use availableBalance instead of currentBalance
+    // availableBalance = currentBalance - lockedInTrades - pendingWithdrawal
+    // This is the SINGLE SOURCE OF TRUTH used by withdrawals and PowaUp
+    // ============================================
+    const balanceInfo = await balanceService.calculateAvailableBalance(senderId);
+    const availableBalance = Math.max(0, balanceInfo.availableBalance);
+    const senderCurrentBalance = sender.currentBalance || 0;
+    
+    // Add debug log showing balance calculation
+    console.log('[BALANCE DEBUG - GIVEAWAY]', {
+      senderId: senderId.toString(),
+      senderEmail: sender.email,
+      currentBalance: senderCurrentBalance,
+      availableBalance: availableBalance,
+      lockedInTrades: balanceInfo.lockedInTrades || 0,
+      pendingWithdrawal: balanceInfo.pendingWithdrawal || 0,
+      amount: amount,
+      canSend: availableBalance >= amount,
+      message: 'SINGLE SOURCE OF TRUTH: availableBalance = currentBalance - lockedInTrades - pendingWithdrawal'
+    });
+    
+    // Validate using availableBalance (not currentBalance)
+    if (availableBalance < amount) {
+      throw new Error(`[v0] Insufficient available balance. You have $${availableBalance.toFixed(2)} but need $${amount.toFixed(2)}`);
     }
     
-    // ATOMIC: Deduct from sender, add to recipient
-    sender.currentBalance = Math.max(0, senderBalance - amount);
+    // ATOMIC: Deduct from sender (using currentBalance), add to recipient
+    // After validation passed, we deduct from currentBalance because validation confirms availableBalance is sufficient
+    sender.currentBalance = Math.max(0, senderCurrentBalance - amount);
     await sender.save({ session });
     
     recipient.currentBalance = (recipient.currentBalance || 0) + amount;
@@ -119,7 +143,8 @@ export const sendUSDGiveaway = async (senderId, recipientUserCode, amount, otp) 
       recipient: recipient._id,
       amount,
       senderNewBalance: sender.currentBalance,
-      recipientNewBalance: recipient.currentBalance
+      recipientNewBalance: recipient.currentBalance,
+      validatedWithAvailableBalance: availableBalance
     });
     
     return {
