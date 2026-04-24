@@ -11,7 +11,7 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: '--font-geist-mono'
 
 export const metadata: Metadata = {
   title: 'Powabitz - Crypto Investment Platform',
-  description: 'Invest in crypto with daily compound returns. Start with just $10 and earn 3.5% daily on your investments.',
+  description: 'Invest in crypto with daily compound returns. Start with just $10 and earn 3% daily on your investments.',
   keywords: 'crypto investment, bitcoin, ethereum, daily returns, compound interest',
   generator: 'Powabitz',
   icons: {

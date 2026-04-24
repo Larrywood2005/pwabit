@@ -57,7 +57,7 @@ export default function ContactPage() {
             {
               icon: Phone,
               title: 'Phone',
-              content: '+1 (234) 567-890',
+              content: '+44 7877 412816',
               desc: 'Available 24/7'
             },
             {

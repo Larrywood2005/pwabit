@@ -33,18 +33,18 @@ export default function AboutPage() {
             </p>
             <p className='text-muted-foreground'>
               Founded in 2024, Powabitz has grown to serve over 10,000 active investors worldwide, managing 
-              more than $50 million in investments.
+              more than $20 million in investments.
             </p>
           </div>
           <div className='p-12 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 border border-border'>
             <div className='text-center'>
-              <div className='text-5xl font-bold text-primary mb-2'>10K+</div>
+              <div className='text-5xl font-bold text-primary mb-2'>5K+</div>
               <p className='text-muted-foreground mb-8'>Active Investors</p>
               
-              <div className='text-5xl font-bold text-secondary mb-2'>$50M+</div>
+              <div className='text-5xl font-bold text-secondary mb-2'>$20M+</div>
               <p className='text-muted-foreground mb-8'>Total Invested</p>
               
-              <div className='text-5xl font-bold text-accent mb-2'>10%</div>
+              <div className='text-5xl font-bold text-accent mb-2'>3%</div>
               <p className='text-muted-foreground'>Daily Returns</p>
             </div>
           </div>

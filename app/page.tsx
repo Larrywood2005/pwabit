@@ -50,11 +50,11 @@ export default function Home() {
             {/* Stats */}
             <div className='grid grid-cols-3 gap-4 pt-8'>
               <div className='flex flex-col gap-1'>
-                <div className='text-2xl font-bold text-primary'>$50M+</div>
+                <div className='text-2xl font-bold text-primary'>$20M+</div>
                 <div className='text-sm text-muted-foreground'>Total Invested</div>
               </div>
               <div className='flex flex-col gap-1'>
-                <div className='text-2xl font-bold text-secondary'>10K+</div>
+                <div className='text-2xl font-bold text-secondary'>5K+</div>
                 <div className='text-sm text-muted-foreground'>Active Investors</div>
               </div>
               <div className='flex flex-col gap-1'>
@@ -160,7 +160,7 @@ export default function Home() {
                   <p className='text-sm text-muted-foreground'>Smart Algorithms</p>
                 </div>
                 <div className='p-4 rounded-lg bg-background/50 border border-border'>
-                  <div className='text-2xl font-bold text-accent mb-2'>100% Safe</div>
+                  <div className='text-2xl font-bold text-accent mb-2'>99% Safe</div>
                   <p className='text-sm text-muted-foreground'>Secure & Monitored</p>
                 </div>
               </div>
