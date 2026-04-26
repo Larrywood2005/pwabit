@@ -33,18 +33,18 @@ export default function AboutPage() {
             </p>
             <p className='text-muted-foreground'>
               Founded in 2024, Powabitz has grown to serve over 10,000 active investors worldwide, managing 
-              more than $20 million in investments.
+              more than $50 million in investments.
             </p>
           </div>
           <div className='p-12 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 border border-border'>
             <div className='text-center'>
-              <div className='text-5xl font-bold text-primary mb-2'>5K+</div>
+              <div className='text-5xl font-bold text-primary mb-2'>10K+</div>
               <p className='text-muted-foreground mb-8'>Active Investors</p>
               
-              <div className='text-5xl font-bold text-secondary mb-2'>$20M+</div>
+              <div className='text-5xl font-bold text-secondary mb-2'>$50M+</div>
               <p className='text-muted-foreground mb-8'>Total Invested</p>
               
-              <div className='text-5xl font-bold text-accent mb-2'>3%</div>
+              <div className='text-5xl font-bold text-accent mb-2'>10%</div>
               <p className='text-muted-foreground'>Daily Returns</p>
             </div>
           </div>
@@ -74,23 +74,34 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Team (Placeholder) */}
+      {/* Team */}
       <section className='py-16 px-4 max-w-7xl mx-auto'>
         <h2 className='text-3xl font-bold text-foreground mb-12 text-center'>Leadership Team</h2>
         
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
-          {[
-            { name: 'John Smith', role: 'CEO & Founder', bio: 'Crypto investor with 10+ years experience' },
-            { name: 'Sarah Johnson', role: 'CTO', bio: 'Blockchain engineer and security specialist' },
-            { name: 'Mike Chen', role: 'CFO', bio: 'Financial advisor with 15+ years in crypto' }
-          ].map((member, idx) => (
-            <div key={idx} className='p-6 rounded-lg border border-border text-center'>
-              <div className='w-20 h-20 rounded-full bg-gradient-to-br from-primary to-secondary mx-auto mb-4'></div>
-              <h3 className='font-bold text-foreground mb-1'>{member.name}</h3>
-              <p className='text-primary text-sm font-semibold mb-2'>{member.role}</p>
-              <p className='text-muted-foreground text-sm'>{member.bio}</p>
-            </div>
-          ))}
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto'>
+          {/* CEO/Founder */}
+          <div className='p-6 rounded-lg border border-border text-center'>
+            <img 
+              src='https://hebbkx1anhila5yf.public.blob.vercel-storage.com/download%20%289%29.jfif-cn5GPKVAzmuqg7oXUloqF1cQOKYYVz.jpeg'
+              alt='CEO & Founder'
+              className='w-24 h-24 rounded-full object-cover mx-auto mb-4 ring-2 ring-primary'
+            />
+            <h3 className='font-bold text-foreground mb-1 text-lg'>Mark Johnson</h3>
+            <p className='text-primary text-sm font-semibold mb-2'>CEO & Founder</p>
+            <p className='text-muted-foreground text-sm'>Crypto investor with 10+ years experience in blockchain technology and digital finance.</p>
+          </div>
+
+          {/* CTO */}
+          <div className='p-6 rounded-lg border border-border text-center'>
+            <img 
+              src='https://hebbkx1anhila5yf.public.blob.vercel-storage.com/download%20%2810%29.jfif-OmxbZXMPvyidz1QvM85vBlrai3DuLO.jpeg'
+              alt='CTO'
+              className='w-24 h-24 rounded-full object-cover mx-auto mb-4 ring-2 ring-secondary'
+            />
+            <h3 className='font-bold text-foreground mb-1 text-lg'>Sarah Chen</h3>
+            <p className='text-secondary text-sm font-semibold mb-2'>Chief Technology Officer</p>
+            <p className='text-muted-foreground text-sm'>Blockchain engineer and security specialist with expertise in smart contracts and cryptography.</p>
+          </div>
         </div>
       </section>
 
