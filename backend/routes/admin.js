@@ -8,7 +8,6 @@ import Admin from '../models/Admin.js';
 import Wallet from '../models/Wallet.js';
 import balanceService from '../services/balanceService.js';
 import transactionLogger from '../services/transactionLogger.js';
-import notificationService from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -1826,13 +1825,6 @@ router.post('/grant-powaup/:userId', authenticate, authorize(['super_admin', 'ad
     user.powaUpBalance = (user.powaUpBalance || 0) + amount;
     await user.save();
 
-    // Send notification to user (async, doesn't block response)
-    try {
-      await notificationService.notifyAdminGrant(user._id, amount, 'powaup', 'Admin');
-    } catch (notifError) {
-      console.error('[v0] Failed to send grant notification:', notifError.message);
-    }
-
     console.log('[v0] Admin granted PowaUp - User:', userId, 'Amount:', amount, 'Previous Balance:', previousBalance, 'New Balance:', user.powaUpBalance);
 
     res.json({
@@ -1919,13 +1911,6 @@ router.post('/grant-powaup-by-code/:userCode', authenticate, authorize(['super_a
     user.powaUpBalance = (user.powaUpBalance || 0) + amount;
     await user.save();
 
-    // Send notification to user (async, doesn't block response)
-    try {
-      await notificationService.notifyAdminGrant(user._id, amount, 'powaup', 'Admin');
-    } catch (notifError) {
-      console.error('[v0] Failed to send grant notification:', notifError.message);
-    }
-
     console.log('[v0] Admin granted PowaUp by code - Code:', userCode, 'User:', user._id, 'Amount:', amount);
 
     res.json({
@@ -1976,13 +1961,6 @@ router.post('/grant-usd', authenticate, authorize(['super_admin', 'admin']), asy
     // ATOMIC: Add funds to user balance
     user.currentBalance = (user.currentBalance || 0) + amount;
     await user.save();
-
-    // Send notification to user (async, doesn't block response)
-    try {
-      await notificationService.notifyAdminGrant(user._id, amount, 'usd', 'Admin');
-    } catch (notifError) {
-      console.error('[v0] Failed to send grant notification:', notifError.message);
-    }
 
     // Create transaction record
     const transaction = await Transaction.create({

@@ -1,7 +1,6 @@
 import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
 import balanceService from './balanceService.js';
-import notificationService from './notificationService.js';
 import mongoose from 'mongoose';
 
 /**
@@ -182,21 +181,6 @@ export const sendUSDGiveaway = async (senderId, recipientUserCode, amount, otp, 
     
     await session.commitTransaction();
     
-    // Send real-time notification to recipient (async, doesn't block transaction)
-    try {
-      await notificationService.notifyFollowerFundsReceived(
-        recipient._id,
-        sender._id,
-        sender.fullName,
-        sender.userCode,
-        numAmount,
-        'usd'
-      );
-    } catch (notifError) {
-      console.error('[GIVEAWAY] Failed to send notification:', notifError.message);
-      // Don't throw - notification failure shouldn't fail the transaction
-    }
-    
     console.log('[GIVEAWAY] USD transfer completed:', {
       transactionId: senderTx._id.toString(),
       sender: sender._id.toString(),
@@ -323,21 +307,6 @@ export const sendPowaUpGiveaway = async (senderId, recipientUserCode, amount) =>
     await recipientTx.save({ session });
     
     await session.commitTransaction();
-    
-    // Send real-time notification to recipient (async, doesn't block transaction)
-    try {
-      await notificationService.notifyFollowerFundsReceived(
-        recipient._id,
-        sender._id,
-        sender.fullName,
-        sender.userCode,
-        amount,
-        'powaup'
-      );
-    } catch (notifError) {
-      console.error('[GIVEAWAY] Failed to send PowaUp notification:', notifError.message);
-      // Don't throw - notification failure shouldn't fail the transaction
-    }
     
     console.log('[v0] PowaUp giveaway successful:', {
       sender: sender._id,
