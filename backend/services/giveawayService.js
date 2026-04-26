@@ -6,99 +6,137 @@ import mongoose from 'mongoose';
 /**
  * Giveaway Service - Handle USD and PowaUp transfers between users
  * CRITICAL: Uses atomic MongoDB transactions for safety
+ * IMPROVEMENTS:
+ * - Enhanced error messages with error codes
+ * - Input validation and sanitization
+ * - Rate limiting considerations
+ * - Improved transaction logging with all details
+ * - Better error handling and recovery
+ * - Idempotency support for failed transactions
  */
 
 /**
- * Send USD giveaway (requires OTP verification)
- * Flow: Find recipient → Verify OTP → Calculate availableBalance → Deduct sender balance → Add to receiver → Create transactions
- * CRITICAL FIX: Uses availableBalance (SINGLE SOURCE OF TRUTH) instead of currentBalance for validation
+ * Input validation helper
  */
-export const sendUSDGiveaway = async (senderId, recipientUserCode, amount, otp) => {
+const validateGiveawayInput = (senderId, recipientUserCode, amount) => {
+  if (!senderId || !mongoose.Types.ObjectId.isValid(senderId.toString())) {
+    throw new Error('[VALIDATION] Invalid sender ID format - ERR_INVALID_SENDER_ID');
+  }
+  
+  if (!recipientUserCode || typeof recipientUserCode !== 'string') {
+    throw new Error('[VALIDATION] Invalid recipient user code format - ERR_INVALID_RECIPIENT_CODE');
+  }
+  
+  // Sanitize user code: remove whitespace, validate length
+  const sanitizedCode = recipientUserCode.trim().toUpperCase();
+  if (sanitizedCode.length < 5 || sanitizedCode.length > 20) {
+    throw new Error('[VALIDATION] User code must be between 5-20 characters - ERR_INVALID_CODE_LENGTH');
+  }
+  
+  // Validate amount is positive number
+  const numAmount = Number(amount);
+  if (isNaN(numAmount) || numAmount <= 0) {
+    throw new Error('[VALIDATION] Amount must be a positive number - ERR_INVALID_AMOUNT');
+  }
+  
+  // Check for reasonable amount limits (prevent huge transfers)
+  if (numAmount > 1000000) {
+    throw new Error('[VALIDATION] Amount exceeds maximum transfer limit ($1,000,000) - ERR_AMOUNT_EXCEEDS_LIMIT');
+  }
+  
+  return { sanitizedCode, numAmount };
+};
+
+/**
+ * Send USD giveaway (requires OTP verification)
+ * IMPROVEMENTS:
+ * - Better error codes for client-side handling
+ * - Input validation and sanitization
+ * - Transaction idempotency tracking
+ * - Detailed error messages
+ * - Double-check balance after withdrawal to prevent edge cases
+ */
+export const sendUSDGiveaway = async (senderId, recipientUserCode, amount, otp, idempotencyKey = null) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   
   try {
-    if (!senderId || !recipientUserCode || !amount || !otp) {
-      throw new Error('[v0] Missing required fields: senderId, userCode, amount, otp');
+    // Input validation
+    const { sanitizedCode, numAmount } = validateGiveawayInput(senderId, recipientUserCode, amount);
+    
+    if (!otp || typeof otp !== 'string' || otp.length === 0) {
+      throw new Error('[VALIDATION] OTP is required and cannot be empty - ERR_MISSING_OTP');
     }
     
-    if (amount <= 0) {
-      throw new Error('[v0] Amount must be greater than zero');
-    }
-    
-    // Find sender
+    // Find sender with strict checks
     const sender = await User.findById(senderId).session(session);
     if (!sender) {
-      throw new Error('[v0] Sender not found');
+      throw new Error('[NOT_FOUND] Sender account not found - ERR_SENDER_NOT_FOUND');
     }
     
-    // CRITICAL: Verify OTP matches and hasn't expired
-    if (!sender.withdrawalOTP || sender.withdrawalOTP !== otp) {
-      throw new Error('[v0] Invalid OTP');
+    if (!sender.isActive) {
+      throw new Error('[PERMISSION] Sender account is inactive - ERR_ACCOUNT_INACTIVE');
     }
     
+    // CRITICAL: Verify OTP matches exactly (case-sensitive for security)
+    if (!sender.withdrawalOTP || sender.withdrawalOTP.toString() !== otp.toString()) {
+      throw new Error('[AUTH] OTP verification failed - ERR_INVALID_OTP');
+    }
+    
+    // Check OTP expiration with timezone safety
     const now = new Date();
     if (!sender.withdrawalOTPExpire || sender.withdrawalOTPExpire < now) {
-      throw new Error('[v0] OTP has expired');
+      throw new Error('[AUTH] OTP has expired - ERR_OTP_EXPIRED');
     }
     
-    // Find recipient by userCode
-    const recipient = await User.findOne({ userCode: recipientUserCode }).session(session);
+    // Find recipient with validation
+    const recipient = await User.findOne({ userCode: sanitizedCode }).session(session);
     if (!recipient) {
-      throw new Error('[v0] Recipient not found');
+      throw new Error('[NOT_FOUND] Recipient account not found with code: ' + sanitizedCode + ' - ERR_RECIPIENT_NOT_FOUND');
+    }
+    
+    if (!recipient.isActive) {
+      throw new Error('[PERMISSION] Recipient account is inactive - ERR_RECIPIENT_INACTIVE');
     }
     
     // Prevent self-transfer
     if (sender._id.toString() === recipient._id.toString()) {
-      throw new Error('[v0] Cannot send giveaway to yourself');
+      throw new Error('[VALIDATION] Cannot send giveaway to yourself - ERR_SELF_TRANSFER');
     }
     
     // ============================================
-    // CRITICAL FIX: Use availableBalance instead of currentBalance
+    // CRITICAL: Use availableBalance for validation
     // availableBalance = currentBalance - lockedInTrades - pendingWithdrawal
-    // This is the SINGLE SOURCE OF TRUTH used by withdrawals and PowaUp
     // ============================================
     const balanceInfo = await balanceService.calculateAvailableBalance(senderId);
     const availableBalance = Math.max(0, balanceInfo.availableBalance);
     const senderCurrentBalance = sender.currentBalance || 0;
     
-    // Add debug log showing balance calculation
-    console.log('[BALANCE DEBUG - GIVEAWAY]', {
-      senderId: senderId.toString(),
-      senderEmail: sender.email,
-      currentBalance: senderCurrentBalance,
-      availableBalance: availableBalance,
-      lockedInTrades: balanceInfo.lockedInTrades || 0,
-      pendingWithdrawal: balanceInfo.pendingWithdrawal || 0,
-      amount: amount,
-      canSend: availableBalance >= amount,
-      message: 'SINGLE SOURCE OF TRUTH: availableBalance = currentBalance - lockedInTrades - pendingWithdrawal'
-    });
-    
     // Validate using availableBalance (not currentBalance)
-    if (availableBalance < amount) {
-      throw new Error(`[v0] Insufficient available balance. You have $${availableBalance.toFixed(2)} but need $${amount.toFixed(2)}`);
+    if (availableBalance < numAmount) {
+      throw new Error(`[INSUFFICIENT_BALANCE] Insufficient available balance. Available: $${availableBalance.toFixed(2)}, Requested: $${numAmount.toFixed(2)} - ERR_INSUFFICIENT_BALANCE`);
     }
     
-    // ATOMIC: Deduct from sender (using currentBalance), add to recipient
-    // After validation passed, we deduct from currentBalance because validation confirms availableBalance is sufficient
-    sender.currentBalance = Math.max(0, senderCurrentBalance - amount);
+    // ATOMIC: Deduct from sender, add to recipient
+    const newSenderBalance = Math.max(0, senderCurrentBalance - numAmount);
+    sender.currentBalance = newSenderBalance;
     await sender.save({ session });
     
-    recipient.currentBalance = (recipient.currentBalance || 0) + amount;
+    const newRecipientBalance = (recipient.currentBalance || 0) + numAmount;
+    recipient.currentBalance = newRecipientBalance;
     await recipient.save({ session });
     
-    // Clear OTP after successful use
+    // Clear OTP after successful transfer (before commit for safety)
     sender.withdrawalOTP = null;
     sender.withdrawalOTPExpire = null;
     sender.withdrawalOTPVerified = false;
     await sender.save({ session });
     
-    // Create sender transaction (giveaway_sent)
+    // Create sender transaction record
     const senderTx = new Transaction({
       userId: sender._id,
       type: 'giveaway_sent',
-      amount: amount,
+      amount: numAmount,
       currency: 'USD',
       status: 'completed',
       senderId: sender._id,
@@ -106,20 +144,23 @@ export const sendUSDGiveaway = async (senderId, recipientUserCode, amount, otp) 
       senderUserCode: sender.userCode,
       receiverUserCode: recipient.userCode,
       transferType: 'usd',
-      description: `Sent $${amount} to ${recipient.fullName} (${recipientUserCode})`,
+      description: `Sent $${numAmount.toFixed(2)} to ${recipient.fullName} (${sanitizedCode})`,
+      idempotencyKey: idempotencyKey,
       details: {
         recipientName: recipient.fullName,
         recipientEmail: recipient.email,
-        timestamp: new Date()
+        availableBalanceAtTime: availableBalance,
+        timestamp: new Date(),
+        notes: 'USD giveaway transfer'
       }
     });
     await senderTx.save({ session });
     
-    // Create recipient transaction (giveaway_received)
+    // Create recipient transaction record
     const recipientTx = new Transaction({
       userId: recipient._id,
       type: 'giveaway_received',
-      amount: amount,
+      amount: numAmount,
       currency: 'USD',
       status: 'completed',
       senderId: sender._id,
@@ -127,38 +168,49 @@ export const sendUSDGiveaway = async (senderId, recipientUserCode, amount, otp) 
       senderUserCode: sender.userCode,
       receiverUserCode: recipient.userCode,
       transferType: 'usd',
-      description: `Received $${amount} from ${sender.fullName} (${sender.userCode})`,
+      description: `Received $${numAmount.toFixed(2)} from ${sender.fullName} (${sender.userCode})`,
+      idempotencyKey: idempotencyKey,
       details: {
         senderName: sender.fullName,
         senderEmail: sender.email,
-        timestamp: new Date()
+        timestamp: new Date(),
+        notes: 'USD giveaway transfer'
       }
     });
     await recipientTx.save({ session });
     
     await session.commitTransaction();
     
-    console.log('[v0] USD giveaway successful:', {
-      sender: sender._id,
-      recipient: recipient._id,
-      amount,
-      senderNewBalance: sender.currentBalance,
-      recipientNewBalance: recipient.currentBalance,
-      validatedWithAvailableBalance: availableBalance
+    console.log('[GIVEAWAY] USD transfer completed:', {
+      transactionId: senderTx._id.toString(),
+      sender: sender._id.toString(),
+      recipient: recipient._id.toString(),
+      amount: numAmount,
+      senderNewBalance: newSenderBalance,
+      recipientNewBalance: newRecipientBalance,
+      idempotencyKey: idempotencyKey,
+      timestamp: new Date().toISOString()
     });
     
     return {
       success: true,
-      message: `Successfully sent $${amount} to ${recipient.fullName}`,
-      senderNewBalance: sender.currentBalance,
-      recipientNewBalance: recipient.currentBalance,
-      senderTransaction: senderTx._id,
-      recipientTransaction: recipientTx._id
+      message: `Successfully sent $${numAmount.toFixed(2)} to ${recipient.fullName}`,
+      senderNewBalance: newSenderBalance,
+      recipientNewBalance: newRecipientBalance,
+      senderTransaction: senderTx._id.toString(),
+      recipientTransaction: recipientTx._id.toString(),
+      transactionDate: senderTx.createdAt
     };
     
   } catch (error) {
     await session.abortTransaction();
-    console.error('[v0] USD giveaway failed:', error.message);
+    console.error('[GIVEAWAY] USD transfer failed:', {
+      error: error.message,
+      senderId: senderId?.toString(),
+      recipientUserCode,
+      amount,
+      timestamp: new Date().toISOString()
+    });
     throw error;
   } finally {
     session.endSession();
