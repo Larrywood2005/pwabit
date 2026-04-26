@@ -20,6 +20,7 @@ import { use24HourRefresh } from '@/hooks/use24HourRefresh';
 import EnhancedTradeModal from '@/components/EnhancedTradeModal';
 import LiveTradingInterface from '@/components/LiveTradingInterface';
 import { GiveawayModal } from '@/components/GiveawayModal';
+import { NotificationBell } from '@/components/NotificationBell';
 
 interface UserStats {
   totalInvested?: number;
@@ -270,6 +271,7 @@ export default function DashboardPage() {
             <p className='text-muted-foreground mt-1 sm:mt-1.5 text-xs sm:text-sm md:text-base break-words'>{t('dashboard.subtitle')}</p>
           </div>
           <div className='flex gap-2 flex-wrap sm:flex-nowrap'>
+            <NotificationBell />
             <button
               onClick={() => setShowGiveawayModal(true)}
               className='flex-1 sm:flex-none px-3 sm:px-4 md:px-6 py-2 sm:py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center justify-center sm:justify-start gap-2 text-xs sm:text-sm font-medium'

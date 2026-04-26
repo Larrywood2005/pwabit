@@ -228,6 +228,52 @@ class ApiClient {
     }
   }
 
+  // Notification endpoints
+  async getNotifications(page: number = 1, limit: number = 50) {
+    try {
+      const response = await this.client.get(`/notifications?page=${page}&limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async markNotificationAsRead(notificationId: string) {
+    try {
+      const response = await this.client.post(`/notifications/${notificationId}/read`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async markAllNotificationsAsRead() {
+    try {
+      const response = await this.client.post(`/notifications/read-all`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async deleteNotification(notificationId: string) {
+    try {
+      const response = await this.client.delete(`/notifications/${notificationId}`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getUnreadNotificationCount() {
+    try {
+      const response = await this.client.get(`/notifications/unread-count`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async findUserByCode(userCode: string) {
     try {
       const response = await this.client.get(`/admin/find-user-by-code/${userCode}`);

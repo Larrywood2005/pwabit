@@ -134,11 +134,12 @@ export function AdminUserDetailsModal({ userId, onClose }: UserDetailsModalProps
                 </p>
                 <p className='font-semibold text-foreground text-sm break-all'>{user.email}</p>
               </div>
-              <div className='p-4 rounded-lg bg-muted'>
+              <div className='p-4 rounded-lg bg-primary/10 border border-primary/20'>
                 <p className='text-xs text-muted-foreground mb-1'>6-Digit Code</p>
-                <p className='font-mono text-xl font-bold text-primary'>
-                  {user.userCode || 'Not Assigned'}
+                <p className='font-mono text-2xl font-bold text-primary'>
+                  {user.userCode ? user.userCode : 'Not Assigned'}
                 </p>
+                <p className='text-xs text-muted-foreground mt-2'>Unique identifier for giveaways</p>
               </div>
               <div className='p-4 rounded-lg bg-muted'>
                 <p className='text-xs text-muted-foreground mb-1'>Role</p>
@@ -261,7 +262,82 @@ export function AdminUserDetailsModal({ userId, onClose }: UserDetailsModalProps
             </form>
           </div>
 
-          {/* 🪪 KYC Details */}
+          {/* 🎁 Referral & Follow System */}
+          <div className='space-y-4'>
+            <h3 className='font-bold text-lg text-foreground'>🎁 Referral & Follow System</h3>
+            
+            {/* Referral Stats */}
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div className='p-4 rounded-lg bg-purple-500/10 border border-purple-500/20'>
+                <p className='text-xs text-muted-foreground mb-2'>Referral Code</p>
+                <p className='font-mono text-lg font-bold text-purple-600'>{user.referralCode || 'N/A'}</p>
+              </div>
+              
+              <div className='p-4 rounded-lg bg-blue-500/10 border border-blue-500/20'>
+                <p className='text-xs text-muted-foreground mb-2'>Direct Referrals (Tier 1)</p>
+                <p className='text-2xl font-bold text-blue-600'>{data?.referrals?.tier1Count || 0}</p>
+              </div>
+              
+              <div className='p-4 rounded-lg bg-indigo-500/10 border border-indigo-500/20'>
+                <p className='text-xs text-muted-foreground mb-2'>Second Level (Tier 2)</p>
+                <p className='text-2xl font-bold text-indigo-600'>{data?.referrals?.tier2Count || 0}</p>
+              </div>
+              
+              <div className='p-4 rounded-lg bg-violet-500/10 border border-violet-500/20'>
+                <p className='text-xs text-muted-foreground mb-2'>Third Level (Tier 3)</p>
+                <p className='text-2xl font-bold text-violet-600'>{data?.referrals?.tier3Count || 0}</p>
+              </div>
+              
+              <div className='p-4 rounded-lg bg-green-500/10 border border-green-500/20'>
+                <p className='text-xs text-muted-foreground mb-2'>Total Referral Earnings</p>
+                <p className='text-2xl font-bold text-green-600'>${data?.referrals?.totalReferralEarnings?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}</p>
+              </div>
+              
+              <div className='p-4 rounded-lg bg-orange-500/10 border border-orange-500/20'>
+                <p className='text-xs text-muted-foreground mb-2'>Referred By</p>
+                <p className='font-semibold text-orange-600'>{user.referredBy ? 'Yes - Active' : 'No - Direct User'}</p>
+              </div>
+            </div>
+
+            {/* Referrals List */}
+            {data?.referralsList && data.referralsList.length > 0 && (
+              <div className='space-y-3'>
+                <h4 className='font-semibold text-foreground text-sm'>Direct Referrals (Tier 1)</h4>
+                <div className='grid grid-cols-1 gap-2 max-h-64 overflow-y-auto'>
+                  {data.referralsList.map((referral: any, idx: number) => (
+                    <div key={idx} className='p-3 rounded-lg bg-muted border border-border hover:border-primary/50 transition-all'>
+                      <div className='flex items-center justify-between gap-2'>
+                        <div className='flex-1'>
+                          <p className='font-semibold text-sm text-foreground'>{referral.fullName}</p>
+                          <p className='text-xs text-muted-foreground'>{referral.email}</p>
+                          <div className='flex gap-3 mt-1 text-xs'>
+                            <span className='px-2 py-1 rounded bg-primary/10 text-primary'>
+                              Code: {referral.userCode || 'N/A'}
+                            </span>
+                            <span className='px-2 py-1 rounded bg-green-500/10 text-green-600'>
+                              Joined: {new Date(referral.joinedAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className='text-right'>
+                          <p className='text-xs text-muted-foreground'>Total Invested</p>
+                          <p className='font-bold text-primary'>${referral.totalInvested?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}</p>
+                          <p className='text-xs text-muted-foreground mt-2'>Commission</p>
+                          <p className='font-bold text-green-600'>${referral.commissionEarned?.toLocaleString('en-US', { minimumFractionDigits: 2 }) || '0.00'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {(!data?.referralsList || data.referralsList.length === 0) && (
+              <div className='p-4 rounded-lg bg-muted/50 text-center'>
+                <p className='text-sm text-muted-foreground'>No direct referrals yet</p>
+              </div>
+            )}
+          </div>
           <div className='space-y-4'>
             <h3 className='font-bold text-lg text-foreground'>🪪 KYC Verification</h3>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>

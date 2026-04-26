@@ -8,6 +8,7 @@ import Admin from '../models/Admin.js';
 import Wallet from '../models/Wallet.js';
 import balanceService from '../services/balanceService.js';
 import transactionLogger from '../services/transactionLogger.js';
+import notificationService from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -298,14 +299,40 @@ router.get('/users/:id', authenticate, authorize(['super_admin', 'admin']), asyn
         description: r.description,
         createdAt: r.createdAt
       })),
-      // REFERRAL INFO
+      // REFERRAL INFO - WITH COMPLETE REFERRALS LIST
       referrals: {
         referralCode: user.referralCode || null,
         referredBy: user.referredBy || null,
-        directReferrals: user.referrals?.length || 0,
+        tier1Count: user.referralStats?.tier1Count || 0,
+        tier2Count: user.referralStats?.tier2Count || 0,
+        tier3Count: user.referralStats?.tier3Count || 0,
+        tier1Earnings: user.referralStats?.tier1Earnings || 0,
+        tier2Earnings: user.referralStats?.tier2Earnings || 0,
+        tier3Earnings: user.referralStats?.tier3Earnings || 0,
         totalReferralEarnings: totalReferralEarnings,
         referralStats: user.referralStats || {}
       },
+      // REFERRALS LIST - All users who referred by this user
+      referralsList: user.referrals ? await Promise.all(
+        user.referrals.map(async (ref) => {
+          try {
+            const referredUser = await User.findById(ref.userId).select('fullName email userCode createdAt');
+            return {
+              _id: ref.userId,
+              fullName: referredUser?.fullName || 'Unknown',
+              email: referredUser?.email || 'Unknown',
+              userCode: referredUser?.userCode || 'N/A',
+              tier: ref.tier,
+              joinedAt: ref.joinedAt,
+              totalInvested: ref.totalInvested,
+              commissionEarned: ref.commissionEarned
+            };
+          } catch (err) {
+            console.error('[v0] Error fetching referral user:', err.message);
+            return null;
+          }
+        })
+      ).then(results => results.filter(r => r !== null)) : [],
       // WALLET & BANK ACCOUNTS
       wallet: wallet,
       bankAccounts: bankAccounts.map(ba => ({
@@ -1799,6 +1826,13 @@ router.post('/grant-powaup/:userId', authenticate, authorize(['super_admin', 'ad
     user.powaUpBalance = (user.powaUpBalance || 0) + amount;
     await user.save();
 
+    // Send notification to user (async, doesn't block response)
+    try {
+      await notificationService.notifyAdminGrant(user._id, amount, 'powaup', 'Admin');
+    } catch (notifError) {
+      console.error('[v0] Failed to send grant notification:', notifError.message);
+    }
+
     console.log('[v0] Admin granted PowaUp - User:', userId, 'Amount:', amount, 'Previous Balance:', previousBalance, 'New Balance:', user.powaUpBalance);
 
     res.json({
@@ -1885,6 +1919,13 @@ router.post('/grant-powaup-by-code/:userCode', authenticate, authorize(['super_a
     user.powaUpBalance = (user.powaUpBalance || 0) + amount;
     await user.save();
 
+    // Send notification to user (async, doesn't block response)
+    try {
+      await notificationService.notifyAdminGrant(user._id, amount, 'powaup', 'Admin');
+    } catch (notifError) {
+      console.error('[v0] Failed to send grant notification:', notifError.message);
+    }
+
     console.log('[v0] Admin granted PowaUp by code - Code:', userCode, 'User:', user._id, 'Amount:', amount);
 
     res.json({
@@ -1935,6 +1976,13 @@ router.post('/grant-usd', authenticate, authorize(['super_admin', 'admin']), asy
     // ATOMIC: Add funds to user balance
     user.currentBalance = (user.currentBalance || 0) + amount;
     await user.save();
+
+    // Send notification to user (async, doesn't block response)
+    try {
+      await notificationService.notifyAdminGrant(user._id, amount, 'usd', 'Admin');
+    } catch (notifError) {
+      console.error('[v0] Failed to send grant notification:', notifError.message);
+    }
 
     // Create transaction record
     const transaction = await Transaction.create({
