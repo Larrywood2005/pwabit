@@ -80,7 +80,7 @@ export default function AdminLoginPage() {
               onChange={handleChange}
               required
               className='w-full pl-10 pr-4 py-3 rounded-lg bg-card border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary'
-              placeholder='admin@powabitz.com'
+              placeholder='Email address'
             />
           </div>
         </div>

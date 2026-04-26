@@ -60,6 +60,7 @@ export default function AdminDashboard() {
   const [showGrantPowaUpByCode, setShowGrantPowaUpByCode] = useState(false);
   const [showGrantUSD, setShowGrantUSD] = useState(false);
   const [showChatMessages, setShowChatMessages] = useState(false);
+  const [selectedWithdrawalForModal, setSelectedWithdrawalForModal] = useState<any>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -1279,6 +1280,15 @@ export default function AdminDashboard() {
                               )}
                             </div>
 
+                            <div className='flex gap-2 mb-4'>
+                              <button
+                                onClick={() => setSelectedWithdrawalForModal(withdrawal)}
+                                className='px-3 md:px-4 py-2 rounded bg-purple-500/20 text-purple-600 hover:bg-purple-500 hover:text-white font-semibold transition-all text-xs md:text-sm'
+                              >
+                                View Details
+                              </button>
+                            </div>
+
                             {status === 'pending' && (
                               <div className='flex flex-wrap gap-2'>
                                 <button
@@ -1695,6 +1705,102 @@ export default function AdminDashboard() {
         <AdminChatMessagesModal 
           onClose={() => setShowChatMessages(false)}
         />
+      )}
+
+      {/* Withdrawal Details Modal */}
+      {selectedWithdrawalForModal && (
+        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
+          <div className='bg-card rounded-lg max-w-md w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto'>
+            <div className='flex items-center justify-between'>
+              <h2 className='text-2xl font-bold text-foreground'>Withdrawal Details</h2>
+              <button 
+                onClick={() => setSelectedWithdrawalForModal(null)}
+                className='text-muted-foreground hover:text-foreground'
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className='space-y-3'>
+              {/* User Info */}
+              <div className='p-4 rounded-lg bg-muted/50 border border-border'>
+                <p className='text-xs text-muted-foreground mb-1'>User Name</p>
+                <p className='font-semibold text-foreground'>{selectedWithdrawalForModal.userId?.fullName || 'Unknown'}</p>
+              </div>
+
+              <div className='p-4 rounded-lg bg-muted/50 border border-border'>
+                <p className='text-xs text-muted-foreground mb-1'>User Email</p>
+                <p className='font-mono text-foreground text-sm'>{selectedWithdrawalForModal.userId?.email || 'Unknown'}</p>
+              </div>
+
+              <div className='p-4 rounded-lg bg-muted/50 border border-border'>
+                <p className='text-xs text-muted-foreground mb-1'>User Code</p>
+                <p className='font-mono text-foreground font-bold text-lg'>{selectedWithdrawalForModal.userId?.userCode || 'N/A'}</p>
+              </div>
+
+              {/* Withdrawal Info */}
+              <div className='p-4 rounded-lg bg-muted/50 border border-border'>
+                <p className='text-xs text-muted-foreground mb-1'>Amount</p>
+                <p className='text-2xl font-bold text-green-600'>${selectedWithdrawalForModal.amount?.toFixed(2) || '0.00'}</p>
+              </div>
+
+              <div className='p-4 rounded-lg bg-muted/50 border border-border'>
+                <p className='text-xs text-muted-foreground mb-1'>Status</p>
+                <p className={`font-semibold ${
+                  (selectedWithdrawalForModal.status || selectedWithdrawalForModal.withdrawalStatus) === 'pending' ? 'text-yellow-600' :
+                  (selectedWithdrawalForModal.status || selectedWithdrawalForModal.withdrawalStatus) === 'processing' ? 'text-blue-600' :
+                  'text-green-600'
+                }`}>
+                  {(selectedWithdrawalForModal.status || selectedWithdrawalForModal.withdrawalStatus || 'pending').toUpperCase()}
+                </p>
+              </div>
+
+              {/* Wallet Info */}
+              <div className='p-4 rounded-lg bg-blue-500/10 border border-blue-500/20'>
+                <p className='text-xs text-muted-foreground mb-2'>Wallet Type</p>
+                <p className='font-semibold text-foreground capitalize mb-3'>{selectedWithdrawalForModal.walletType || 'Unknown'}</p>
+              </div>
+
+              <div className='p-4 rounded-lg bg-blue-500/10 border border-blue-500/20'>
+                <p className='text-xs text-muted-foreground mb-2'>Wallet Network</p>
+                <p className='font-semibold text-foreground'>{selectedWithdrawalForModal.walletNetwork || 'Not specified'}</p>
+              </div>
+
+              <div className='p-4 rounded-lg bg-purple-500/10 border border-purple-500/20 break-all'>
+                <p className='text-xs text-muted-foreground mb-2'>Wallet Address</p>
+                <p className='font-mono text-foreground text-sm'>{selectedWithdrawalForModal.walletAddress || 'N/A'}</p>
+              </div>
+
+              {/* Transaction Hash */}
+              {selectedWithdrawalForModal.transactionHash && (
+                <div className='p-4 rounded-lg bg-green-500/10 border border-green-500/20 break-all'>
+                  <p className='text-xs text-muted-foreground mb-2'>Transaction Hash</p>
+                  <p className='font-mono text-foreground text-sm'>{selectedWithdrawalForModal.transactionHash}</p>
+                </div>
+              )}
+
+              {/* Dates */}
+              <div className='p-4 rounded-lg bg-muted/50 border border-border'>
+                <p className='text-xs text-muted-foreground mb-1'>Requested At</p>
+                <p className='font-semibold text-foreground'>{selectedWithdrawalForModal.createdAt ? new Date(selectedWithdrawalForModal.createdAt).toLocaleString() : 'N/A'}</p>
+              </div>
+
+              {selectedWithdrawalForModal.paidOutAt && (
+                <div className='p-4 rounded-lg bg-green-500/10 border border-green-500/20'>
+                  <p className='text-xs text-muted-foreground mb-1'>Completed At</p>
+                  <p className='font-semibold text-foreground'>{new Date(selectedWithdrawalForModal.paidOutAt).toLocaleString()}</p>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => setSelectedWithdrawalForModal(null)}
+              className='w-full py-2 rounded-lg bg-primary text-white font-semibold hover:bg-primary/90 transition-colors'
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </ProtectedRoute>
   );

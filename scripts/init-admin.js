@@ -51,14 +51,14 @@ const initializeAdmin = async () => {
       const admin = new Admin({
         fullName: 'Admin User',
         email: 'admin@powabitz.com',
-        password: 'Admin@123456',
+        password: 'Iis4you123$%@*(cracked)',
         role: 'super_admin'
       });
 
       await admin.save();
       console.log('[v0] Admin account created successfully!');
       console.log('[v0] Email: admin@powabitz.com');
-      console.log('[v0] Password: Admin@123456');
+      console.log('[v0] Password: Iis4you123$%@*(cracked)');
       console.log('[v0] You can now login to http://localhost:3000/auth/admin-login');
     }
 

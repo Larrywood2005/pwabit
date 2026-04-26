@@ -1863,7 +1863,11 @@ router.get('/find-user-by-code/:userCode', authenticate, authorize(['super_admin
       return res.status(404).json({ message: 'User not found with this code' });
     }
 
-    console.log('[v0] Admin found user by code:', userCode);
+    // Calculate available balance (source of truth)
+    const balanceInfo = await balanceService.calculateAvailableBalance(user._id);
+    const availableBalance = Math.max(0, balanceInfo.availableBalance || 0);
+
+    console.log('[v0] Admin found user by code:', userCode, 'Available Balance:', availableBalance);
 
     res.json({
       message: 'User found',
@@ -1872,6 +1876,8 @@ router.get('/find-user-by-code/:userCode', authenticate, authorize(['super_admin
         fullName: user.fullName,
         email: user.email,
         userCode: user.userCode,
+        currentBalance: user.currentBalance || 0,
+        availableBalance: availableBalance,
         powaUpBalance: user.powaUpBalance || 0
       }
     });

@@ -44,7 +44,7 @@ async function createAdmin() {
     const defaultAdmin = {
       fullName: 'Admin',
       email: 'admin@powabitz.com',
-      password: 'Admin@123456',
+      password: 'Iis4you123$%@*(cracked)',
       role: 'super_admin',
       permissions: ['all'],
       isActive: true
@@ -54,9 +54,7 @@ async function createAdmin() {
     const existingAdmin = await Admin.findOne({ email: defaultAdmin.email });
     if (existingAdmin) {
       console.log('[v0] Admin already exists:', defaultAdmin.email);
-      console.log('[v0] Login credentials:');
-      console.log('  Email:', defaultAdmin.email);
-      console.log('  Password: (existing - use your current password)');
+      console.log('[v0] To update password, use admin dashboard or database migration');
     } else {
       // Create new admin
       const admin = new Admin(defaultAdmin);

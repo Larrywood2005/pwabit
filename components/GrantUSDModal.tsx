@@ -66,19 +66,18 @@ export function GrantUSDModal({ isOpen, onClose, onSuccess }: GrantUSDModalProps
 
       const response = await apiClient.grantUSD(userCode, Number(amount));
 
-      setSuccess(`Successfully granted $${Number(amount).toFixed(2)} USD to ${response.user.fullName}`);
-      
-      setFoundUser({
-        ...foundUser,
-        currentBalance: response.user.newBalance
-      });
+      // Refresh user details to show updated balance
+      const updatedUserResponse = await apiClient.findUserByCode(userCode);
+      setFoundUser(updatedUserResponse.user);
 
+      setSuccess(`Successfully granted $${Number(amount).toFixed(2)} USD to ${response.user.fullName}`);
       setAmount('');
+      
       setTimeout(() => {
         setSuccess('');
         onClose();
         onSuccess?.();
-      }, 2000);
+      }, 2500);
     } catch (err: any) {
       setError(err.message || 'Failed to grant USD');
     } finally {
