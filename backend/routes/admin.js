@@ -255,13 +255,15 @@ router.get('/users/:id', authenticate, authorize(['super_admin', 'admin']), asyn
         lastReturnDate: inv.lastReturnDate,
         createdAt: inv.createdAt
       })),
-      // WITHDRAWALS - ALL
+      // WITHDRAWALS - ALL WITH WALLET NETWORK INFO
       withdrawals: withdrawals.map(w => ({
         _id: w._id,
         amount: w.amount,
         currency: w.currency,
         method: w.method,
         walletAddress: w.walletAddress,
+        walletType: w.walletType || w.method, // Include wallet type (BTC, ETH, USDT, etc.)
+        walletNetwork: w.walletNetwork || 'Not specified', // Include network info (Mainnet, Testnet, Polygon, etc.)
         status: w.status,
         createdAt: w.createdAt,
         processedAt: w.processedAt,

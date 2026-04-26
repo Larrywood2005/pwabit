@@ -1,11 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { AlertCircle, Check } from 'lucide-react';
+import { Search, Gift, AlertCircle, CheckCircle, X } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 
 interface GrantUSDModalProps {
@@ -17,131 +13,175 @@ interface GrantUSDModalProps {
 export function GrantUSDModal({ isOpen, onClose, onSuccess }: GrantUSDModalProps) {
   const [userCode, setUserCode] = useState('');
   const [amount, setAmount] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [granting, setGranting] = useState(false);
+  const [foundUser, setFoundUser] = useState<any>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleGrantUSD = async (e: React.FormEvent) => {
+  const handleSearchUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    // Validation
-    if (!userCode.trim()) {
-      setError('Please enter a user code');
-      return;
-    }
-
-    if (!amount || parseFloat(amount) <= 0) {
-      setError('Please enter a valid amount');
-      return;
-    }
-
-    if (parseFloat(amount) > 100000) {
-      setError('Amount cannot exceed $100,000');
+    if (!userCode || userCode.length < 5) {
+      setError('Please enter a valid user code');
       return;
     }
 
     try {
-      setLoading(true);
-      const result = await apiClient.grantUSD(userCode.trim(), parseFloat(amount));
+      setSearching(true);
+      setError('');
+      setSuccess('');
+      setFoundUser(null);
+
+      const response = await apiClient.findUserByCode(userCode);
+      setFoundUser(response.user);
+    } catch (err: any) {
+      setError(err.message || 'User not found');
+      setFoundUser(null);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleGrantUSD = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!foundUser) {
+      setError('Please search for a user first');
+      return;
+    }
+
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      setError('Please enter a valid USD amount');
+      return;
+    }
+
+    if (Number(amount) > 100000) {
+      setError('Maximum grant amount is $100,000');
+      return;
+    }
+
+    try {
+      setGranting(true);
+      setError('');
+      setSuccess('');
+
+      const response = await apiClient.grantUSD(userCode, Number(amount));
+
+      setSuccess(`Successfully granted $${Number(amount).toFixed(2)} USD to ${response.user.fullName}`);
       
-      setSuccess(`Successfully granted $${parseFloat(amount).toFixed(2)} to user ${userCode}`);
-      setUserCode('');
+      setFoundUser({
+        ...foundUser,
+        currentBalance: response.user.newBalance
+      });
+
       setAmount('');
-      
       setTimeout(() => {
+        setSuccess('');
         onClose();
         onSuccess?.();
       }, 2000);
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to grant USD';
-      setError(errorMessage);
-      console.error('[v0] Grant USD error:', err);
+      setError(err.message || 'Failed to grant USD');
     } finally {
-      setLoading(false);
+      setGranting(false);
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Grant USD to User</DialogTitle>
-          <DialogDescription>
-            Send USD directly to a user account by their user code
-          </DialogDescription>
-        </DialogHeader>
+    <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
+      <div className='bg-card rounded-lg max-w-md w-full p-6 space-y-6'>
+        <div className='flex items-center justify-between'>
+          <h2 className='text-2xl font-bold text-foreground flex items-center gap-2'>
+            <Gift size={24} className='text-green-600' />
+            Grant USD to User
+          </h2>
+          <button onClick={onClose} className='text-muted-foreground hover:text-foreground'>
+            <X size={24} />
+          </button>
+        </div>
 
-        <form onSubmit={handleGrantUSD} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="userCode">User Code (6-digit)</Label>
-            <Input
-              id="userCode"
-              placeholder="e.g., 123456"
+        <div className='space-y-3'>
+          <h3 className='font-semibold text-foreground'>Step 1: Find User</h3>
+          <form onSubmit={handleSearchUser} className='space-y-3'>
+            <input
+              type='text'
               value={userCode}
-              onChange={(e) => {
-                setUserCode(e.target.value);
-                setError('');
-              }}
-              disabled={loading}
+              onChange={(e) => setUserCode(e.target.value)}
+              placeholder='Enter user code'
               maxLength={20}
+              className='w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary'
+              disabled={searching}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount (USD)</Label>
-            <Input
-              id="amount"
-              type="number"
-              placeholder="0.00"
-              value={amount}
-              onChange={(e) => {
-                setAmount(e.target.value);
-                setError('');
-              }}
-              disabled={loading}
-              min="0"
-              step="0.01"
-              max="100000"
-            />
-            <p className="text-xs text-muted-foreground">Maximum: $100,000</p>
-          </div>
-
-          {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
-              <AlertCircle className="w-4 h-4 text-red-600" />
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          {success && (
-            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-md">
-              <Check className="w-4 h-4 text-green-600" />
-              <p className="text-sm text-green-600">{success}</p>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-              className="flex-1"
+            <button
+              type='submit'
+              disabled={searching || userCode.length < 5}
+              className='w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-500 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2'
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading || !userCode || !amount}
-              className="flex-1"
-            >
-              {loading ? 'Granting...' : 'Grant USD'}
-            </Button>
+              <Search size={18} />
+              {searching ? 'Searching...' : 'Search User'}
+            </button>
+          </form>
+        </div>
+
+        {foundUser && (
+          <div className='p-4 rounded-lg bg-green-500/10 border border-green-500/20 space-y-2'>
+            <div className='flex items-center gap-2 text-green-600'>
+              <CheckCircle size={18} />
+              <span className='font-semibold'>User Found!</span>
+            </div>
+            <div className='space-y-1 text-sm'>
+              <p><span className='text-muted-foreground'>Name:</span> {foundUser.fullName}</p>
+              <p><span className='text-muted-foreground'>Email:</span> {foundUser.email}</p>
+              <p><span className='text-muted-foreground'>Current Balance:</span> <span className='font-mono font-bold text-primary'>${(foundUser.currentBalance || 0).toFixed(2)}</span></p>
+              <p><span className='text-muted-foreground'>Available:</span> <span className='font-mono font-bold text-green-600'>${(foundUser.availableBalance || 0).toFixed(2)}</span></p>
+            </div>
           </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        )}
+
+        {foundUser && (
+          <div className='space-y-3'>
+            <h3 className='font-semibold text-foreground'>Step 2: Grant USD</h3>
+            <form onSubmit={handleGrantUSD} className='space-y-3'>
+              <div>
+                <label className='block text-sm text-muted-foreground mb-1'>Amount (USD)</label>
+                <input
+                  type='number'
+                  min='0.01'
+                  max='100000'
+                  step='0.01'
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder='Enter amount (max $100,000)'
+                  className='w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary'
+                  disabled={granting}
+                />
+              </div>
+              <button
+                type='submit'
+                disabled={granting || !amount}
+                className='w-full px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-500 text-white font-semibold rounded-lg transition-all'
+              >
+                {granting ? 'Granting...' : 'Grant USD'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {error && (
+          <div className='p-3 rounded-lg bg-red-500/20 border border-red-500/40 text-red-600 text-sm flex items-start gap-2'>
+            <AlertCircle size={18} className='flex-shrink-0 mt-0.5' />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {success && (
+          <div className='p-3 rounded-lg bg-green-500/20 border border-green-500/40 text-green-600 text-sm flex items-start gap-2'>
+            <CheckCircle size={18} className='flex-shrink-0 mt-0.5' />
+            <span>{success}</span>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

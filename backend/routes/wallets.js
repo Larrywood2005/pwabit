@@ -236,7 +236,7 @@ router.post('/withdrawal', authenticate, async (req, res) => {
   session.startTransaction();
 
   try {
-    const { amount, currency, method, walletId, otp } = req.body;
+    const { amount, currency, method, walletId, otp, walletNetwork } = req.body;
     const userId = req.user.userId || req.user._id;
 
     // Validate input
@@ -523,6 +523,7 @@ router.post('/withdrawal', authenticate, async (req, res) => {
         currency: currency || 'USD',
         walletAddress: walletAddress || '',
         walletType: walletType || 'crypto',
+        walletNetwork: walletNetwork || 'Not specified',
         method: method || 'crypto',
         status: 'pending',
         withdrawalStatus: 'pending',
@@ -604,6 +605,7 @@ router.post('/withdrawal', authenticate, async (req, res) => {
           currency: transaction.currency,
           walletAddress: transaction.walletAddress,
           walletType: transaction.walletType,
+          walletNetwork: transaction.walletNetwork,
           status: 'pending',
           withdrawalStatus: 'pending',
           balanceBefore: transaction.balanceBefore,
