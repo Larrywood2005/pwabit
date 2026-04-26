@@ -10,6 +10,7 @@ import { PendingDepositCard } from '@/components/PendingDepositCard';
 import { UserManagement } from '@/components/UserManagement';
 import { AdminUserDetailsModal } from '@/components/AdminUserDetailsModal';
 import { GrantPowaUpByCodeModal } from '@/components/GrantPowaUpByCodeModal';
+import { GrantUSDModal } from '@/components/GrantUSDModal';
 import { AdminChatMessagesModal } from '@/components/AdminChatMessagesModal';
 import { io } from 'socket.io-client';
 
@@ -57,6 +58,7 @@ export default function AdminDashboard() {
   const [userWalletAddresses, setUserWalletAddresses] = useState<any[]>([]);
   const [selectedUserForDetails, setSelectedUserForDetails] = useState<string | null>(null);
   const [showGrantPowaUpByCode, setShowGrantPowaUpByCode] = useState(false);
+  const [showGrantUSD, setShowGrantUSD] = useState(false);
   const [showChatMessages, setShowChatMessages] = useState(false);
 
   useEffect(() => {
@@ -535,6 +537,12 @@ export default function AdminDashboard() {
             className='px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-all flex items-center gap-2 text-sm'
           >
             🎁 Grant PowaUp by Code
+          </button>
+          <button
+            onClick={() => setShowGrantUSD(true)}
+            className='px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-all flex items-center gap-2 text-sm'
+          >
+            💵 Grant USD to User
           </button>
           <button
             onClick={() => setShowChatMessages(true)}
@@ -1658,6 +1666,27 @@ export default function AdminDashboard() {
       {showGrantPowaUpByCode && (
         <GrantPowaUpByCodeModal 
           onClose={() => setShowGrantPowaUpByCode(false)}
+        />
+      )}
+
+      {/* Grant USD Modal */}
+      {showGrantUSD && (
+        <GrantUSDModal 
+          isOpen={showGrantUSD}
+          onClose={() => setShowGrantUSD(false)}
+          onSuccess={() => {
+            setShowGrantUSD(false);
+            // Refresh stats after successful grant
+            const fetchUpdatedStats = async () => {
+              try {
+                const statsData = await apiClient.getAdminStats();
+                setStats(statsData || {});
+              } catch (err) {
+                console.error('[v0] Error fetching updated stats:', err);
+              }
+            };
+            fetchUpdatedStats();
+          }}
         />
       )}
 

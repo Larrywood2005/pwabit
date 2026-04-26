@@ -219,6 +219,15 @@ class ApiClient {
     }
   }
 
+  async grantUSD(userCode: string, amount: number) {
+    try {
+      const response = await this.client.post(`/admin/grant-usd`, { userCode, amount });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async findUserByCode(userCode: string) {
     try {
       const response = await this.client.get(`/admin/find-user-by-code/${userCode}`);
