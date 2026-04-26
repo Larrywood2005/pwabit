@@ -107,22 +107,51 @@ export const sendUSDGiveaway = async (senderId, recipientUserCode, amount, otp, 
     // ============================================
     // CRITICAL: Use availableBalance for validation
     // availableBalance = currentBalance - lockedInTrades - pendingWithdrawal
+    // This is the SINGLE SOURCE OF TRUTH for what user can actually use
     // ============================================
     const balanceInfo = await balanceService.calculateAvailableBalance(senderId);
     const availableBalance = Math.max(0, balanceInfo.availableBalance);
-    const senderCurrentBalance = sender.currentBalance || 0;
+    
+    console.log('[GIVEAWAY-VALIDATION]', {
+      userId: senderId.toString(),
+      availableBalance: availableBalance,
+      requestedAmount: numAmount,
+      canTransfer: availableBalance >= numAmount
+    });
     
     // Validate using availableBalance (not currentBalance)
+    // This ensures we respect:
+    // 1. Locked funds in active trades
+    // 2. Pending withdrawals already requested
     if (availableBalance < numAmount) {
       throw new Error(`[INSUFFICIENT_BALANCE] Insufficient available balance. Available: $${availableBalance.toFixed(2)}, Requested: $${numAmount.toFixed(2)} - ERR_INSUFFICIENT_BALANCE`);
     }
     
-    // ATOMIC: Deduct from sender, add to recipient
+    // ATOMIC: Deduct from sender.currentBalance only (not from available balance)
+    // Keep deduction simple: just reduce the currentBalance
+    // The availableBalance calculation automatically accounts for locked/pending when needed
+    const senderCurrentBalance = sender.currentBalance || 0;
     const newSenderBalance = Math.max(0, senderCurrentBalance - numAmount);
+    
+    console.log('[GIVEAWAY-DEDUCTION]', {
+      userId: senderId.toString(),
+      senderCurrentBalanceBefore: senderCurrentBalance,
+      deductionAmount: numAmount,
+      senderCurrentBalanceAfter: newSenderBalance
+    });
+    
     sender.currentBalance = newSenderBalance;
     await sender.save({ session });
     
     const newRecipientBalance = (recipient.currentBalance || 0) + numAmount;
+    
+    console.log('[GIVEAWAY-RECIPIENT]', {
+      userId: recipient._id.toString(),
+      recipientCurrentBalanceBefore: (recipient.currentBalance || 0),
+      additionAmount: numAmount,
+      recipientCurrentBalanceAfter: newRecipientBalance
+    });
+    
     recipient.currentBalance = newRecipientBalance;
     await recipient.save({ session });
     
