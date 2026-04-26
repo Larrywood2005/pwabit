@@ -1905,4 +1905,106 @@ router.post('/grant-powaup-by-code/:userCode', authenticate, authorize(['super_a
   }
 });
 
+// Grant USD to a user by their 6-digit code (REAL-TIME CREDIT)
+router.post('/grant-usd', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
+  try {
+    const { userCode, amount } = req.body;
+    const adminId = req.user?._id || req.user?.userId;
+
+    if (!userCode || !amount) {
+      return res.status(400).json({ message: 'userCode and amount are required' });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({ message: 'Amount must be greater than zero' });
+    }
+
+    // Prevent granting massive amounts at once
+    if (amount > 100000) {
+      return res.status(400).json({ message: 'Cannot grant more than $100,000 USD at once' });
+    }
+
+    // Find user by userCode
+    const user = await User.findOne({ userCode });
+    if (!user) {
+      return res.status(404).json({ message: `User with code ${userCode} not found` });
+    }
+
+    const previousBalance = user.currentBalance || 0;
+
+    // ATOMIC: Add funds to user balance
+    user.currentBalance = (user.currentBalance || 0) + amount;
+    await user.save();
+
+    // Create transaction record
+    const transaction = await Transaction.create({
+      userId: user._id,
+      type: 'admin_credit',
+      amount: amount,
+      currency: 'USD',
+      status: 'completed',
+      confirmedAt: new Date(),
+      description: `Admin granted $${amount} USD`,
+      details: {
+        grantedBy: adminId,
+        grantedTo: user.userCode,
+        reason: 'Admin credit',
+        timestamp: new Date()
+      }
+    });
+
+    console.log('[v0] Admin granted USD - Code:', userCode, 'User:', user._id, 'Amount:', amount, 'Previous Balance:', previousBalance, 'New Balance:', user.currentBalance);
+
+    // Log to transaction logger for audit trail
+    await transactionLogger.logBalanceTransaction(user._id, 'admin_usd_grant', amount, {
+      grantedBy: adminId,
+      previousBalance: previousBalance,
+      newBalance: user.currentBalance,
+      transactionId: transaction._id
+    });
+
+    // Emit real-time socket event if socket.io is available
+    if (router.io) {
+      router.io.emit('admin-balance-updated', {
+        userId: user._id.toString(),
+        userCode: user.userCode,
+        newBalance: user.currentBalance,
+        creditAmount: amount,
+        type: 'admin_usd_grant'
+      });
+
+      // Also emit to the specific user's room if connected
+      router.io.to(`user-${user._id.toString()}`).emit('balance-updated', {
+        currentBalance: user.currentBalance,
+        source: 'admin_grant'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully granted $${amount} USD to ${user.fullName}`,
+      user: {
+        _id: user._id,
+        userCode: user.userCode,
+        fullName: user.fullName,
+        email: user.email,
+        previousBalance: previousBalance,
+        newBalance: user.currentBalance,
+        creditAmount: amount
+      },
+      transaction: {
+        _id: transaction._id,
+        type: transaction.type,
+        amount: transaction.amount,
+        status: transaction.status,
+        createdAt: transaction.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('[v0] Error granting USD:', error);
+    res.status(500).json({ message: 'Failed to grant USD', error: error.message });
+  }
+});
+
 export default router;
