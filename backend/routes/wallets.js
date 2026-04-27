@@ -246,10 +246,10 @@ router.post('/withdrawal', authenticate, async (req, res) => {
       return res.status(400).json({ message: 'Withdrawal amount must be greater than $0' });
     }
 
-    if (amount < 5) {
+    if (amount < 10) {
       await session.abortTransaction();
       session.endSession();
-      return res.status(400).json({ message: 'Minimum withdrawal amount is $5' });
+      return res.status(400).json({ message: 'Minimum withdrawal amount is $10' });
     }
 
     if (!walletId && !method) {
@@ -452,6 +452,21 @@ router.post('/withdrawal', authenticate, async (req, res) => {
 
     // TRANSACTION BLOCK: Balance deduction and transaction record created atomically
     // CRITICAL: Calculate and validate final balance BEFORE any modifications
+    
+    // Calculate 2% withdrawal fee (crypto network fee)
+    const withdrawalFeePercentage = 0.02; // 2%
+    const withdrawalFee = parseFloat((amount * withdrawalFeePercentage).toFixed(2));
+    const amountToPay = parseFloat((amount - withdrawalFee).toFixed(2));
+    
+    console.log('[v0] Withdrawal - Fee Calculation:', {
+      userId: userId.toString(),
+      requestedAmount: amount,
+      feePercentage: withdrawalFeePercentage * 100,
+      withdrawalFee: withdrawalFee,
+      amountToPay: amountToPay,
+      message: '2% crypto network withdrawal fee applied'
+    });
+    
     const balanceBefore = user.currentBalance || 0;
     const balanceAfter = balanceBefore - amount;
 
@@ -520,6 +535,8 @@ router.post('/withdrawal', authenticate, async (req, res) => {
         userId,
         type: 'withdrawal',
         amount: amount,
+        withdrawalFee: withdrawalFee,
+        amountToPay: amountToPay,
         currency: currency || 'USD',
         walletAddress: walletAddress || '',
         walletType: walletType || 'crypto',
@@ -602,6 +619,8 @@ router.post('/withdrawal', authenticate, async (req, res) => {
             email: transaction.userId?.email
           },
           amount: transaction.amount,
+          withdrawalFee: transaction.withdrawalFee,
+          amountToPay: transaction.amountToPay,
           currency: transaction.currency,
           walletAddress: transaction.walletAddress,
           walletType: transaction.walletType,
@@ -617,6 +636,8 @@ router.post('/withdrawal', authenticate, async (req, res) => {
         router.io.to(userId.toString()).emit('withdrawal-created', {
           _id: transaction._id,
           amount: transaction.amount,
+          withdrawalFee: transaction.withdrawalFee,
+          amountToPay: transaction.amountToPay,
           status: 'pending',
           newBalance: balanceAfter,
           createdAt: transaction.createdAt

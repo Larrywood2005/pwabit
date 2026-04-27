@@ -62,7 +62,7 @@ function WithdrawalPageContent() {
   const [withdrawalSuccess, setWithdrawalSuccess] = useState(false);
   const [completedWithdrawal, setCompletedWithdrawal] = useState<any>(null);
 
-  const MIN_WITHDRAWAL = 5;
+  const MIN_WITHDRAWAL = 10;
 
   useEffect(() => {
     if (user) {
@@ -831,6 +831,24 @@ function WithdrawalPageContent() {
               <p className="text-xs text-muted-foreground">
                 Minimum: ${MIN_WITHDRAWAL} | Available: ${balance.toFixed(2)}
               </p>
+
+              {/* Withdrawal Fee Breakdown */}
+              {withdrawalData.amount > 0 && (
+                <div className="mt-3 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 space-y-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Withdrawal Amount:</span>
+                    <span className="font-semibold text-foreground">${withdrawalData.amount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">2% Crypto Network Fee:</span>
+                    <span className="font-semibold text-orange-600">${(withdrawalData.amount * 0.02).toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-orange-500/20 pt-2 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-foreground">You&apos;ll Receive:</span>
+                    <span className="text-lg font-bold text-green-600">${(withdrawalData.amount - (withdrawalData.amount * 0.02)).toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Withdrawal Method Selection */}

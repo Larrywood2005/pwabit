@@ -417,7 +417,7 @@ export default function AdminDashboard() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
         },
         body: JSON.stringify({ reason }),
       });
@@ -1739,9 +1739,19 @@ export default function AdminDashboard() {
               </div>
 
               {/* Withdrawal Info */}
-              <div className='p-4 rounded-lg bg-muted/50 border border-border'>
-                <p className='text-xs text-muted-foreground mb-1'>Amount</p>
+              <div className='p-4 rounded-lg bg-green-500/10 border border-green-500/20'>
+                <p className='text-xs text-muted-foreground mb-1'>Requested Withdrawal Amount</p>
                 <p className='text-2xl font-bold text-green-600'>${selectedWithdrawalForModal.amount?.toFixed(2) || '0.00'}</p>
+              </div>
+
+              <div className='p-4 rounded-lg bg-orange-500/10 border border-orange-500/20'>
+                <p className='text-xs text-muted-foreground mb-1'>2% Crypto Network Fee</p>
+                <p className='text-xl font-bold text-orange-600'>${(selectedWithdrawalForModal.withdrawalFee || (selectedWithdrawalForModal.amount * 0.02)).toFixed(2)}</p>
+              </div>
+
+              <div className='p-4 rounded-lg bg-blue-500/10 border border-blue-500/20'>
+                <p className='text-xs text-muted-foreground mb-1'>Amount to Pay User (After Fee)</p>
+                <p className='text-2xl font-bold text-blue-600'>${(selectedWithdrawalForModal.amountToPay || (selectedWithdrawalForModal.amount - (selectedWithdrawalForModal.withdrawalFee || (selectedWithdrawalForModal.amount * 0.02)))).toFixed(2)}</p>
               </div>
 
               <div className='p-4 rounded-lg bg-muted/50 border border-border'>

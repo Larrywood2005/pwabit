@@ -24,6 +24,8 @@ const transactionSchema = new mongoose.Schema({
   
   // Amount Details
   amount: { type: Number, required: true },
+  withdrawalFee: { type: Number, default: 0 }, // 2% crypto network fee
+  amountToPay: { type: Number, default: 0 }, // Amount after fee (amount - fee)
   currency: { type: String, default: 'USD' }, // Can be BTC, ETH, USDT
   
   // Status

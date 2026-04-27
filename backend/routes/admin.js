@@ -500,6 +500,32 @@ router.post('/reject-deposit/:transactionId', authenticate, authorize(['super_ad
       });
     }
 
+    // Emit Socket.io event for real-time deposit rejection
+    if (router.io) {
+      try {
+        // Notify user about rejection
+        router.io.to(transaction.userId.toString()).emit('deposit-rejected', {
+          transactionId: transaction._id,
+          amount: transaction.amount,
+          reason: transaction.rejectionReason,
+          refundedBalance: user?.currentBalance || 0,
+          message: `Your deposit of $${transaction.amount.toFixed(2)} has been rejected. Reason: ${transaction.rejectionReason}`
+        });
+
+        // Notify admin room
+        router.io.to('admin').emit('deposit-rejected-admin', {
+          transactionId: transaction._id,
+          userId: transaction.userId,
+          amount: transaction.amount,
+          reason: transaction.rejectionReason,
+          rejectedBy: req.user.userId || req.user._id,
+          rejectedAt: transaction.rejectedAt
+        });
+      } catch (socketError) {
+        console.warn('[v0] Socket emission failed for deposit rejection (non-critical):', socketError.message);
+      }
+    }
+
     return res.json({
       message: 'Deposit rejected successfully',
       transaction: {
