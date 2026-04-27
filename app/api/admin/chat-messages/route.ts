@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     await connectDB();
     
     const body = await request.json();
-    const { userName, userEmail, message, subject, hasText, hasImage, image } = body;
+    const { userName, userEmail, message, subject, hasText, hasImage, image, userId } = body;
     
     // Validate required fields
     if (!userName || !userEmail) {
@@ -26,20 +26,28 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('[v0] Creating chat message from contact/support:', {
+    console.log('[v0] Creating chat message from contact/support/user:', {
       userName,
       userEmail,
       hasText,
       hasImage,
-      subject
+      subject,
+      userId,
+      senderType: userId ? 'user' : 'contact'
     });
+    
+    // Determine sender type
+    let sender = 'contact';
+    if (userId) {
+      sender = 'user'; // Message from logged-in user
+    }
     
     // Create and save chat message - message will appear in admin dashboard
     const chatMessage = new ChatMessage({
-      userId: null, // Anonymous messages from contact form
+      userId: userId || null, // Anonymous messages from contact form
       userEmail,
       userName,
-      sender: 'contact',
+      sender,
       message: message || undefined,
       subject: subject || undefined,
       image: image || undefined,

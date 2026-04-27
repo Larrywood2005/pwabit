@@ -5,7 +5,7 @@ const chatMessageSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    default: null // Allow null for contact form messages
   },
   userEmail: { type: String, required: true }, // Cache for display
   userName: { type: String, required: true }, // Cache for display
@@ -13,12 +13,13 @@ const chatMessageSchema = new mongoose.Schema({
   // Message content
   sender: {
     type: String,
-    enum: ['user', 'admin', 'ai'],
+    enum: ['user', 'admin', 'ai', 'contact', 'ai-support'],
     default: 'user'
   },
   message: String, // Text message (optional if image present)
   image: String, // Image URL or path (optional if text present)
   imageType: String, // MIME type: image/jpeg, image/png, etc.
+  subject: String, // For contact form messages
   
   // Validation
   hasText: { type: Boolean, default: false },
