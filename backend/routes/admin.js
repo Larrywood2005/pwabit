@@ -8,6 +8,7 @@ import Admin from '../models/Admin.js';
 import Wallet from '../models/Wallet.js';
 import balanceService from '../services/balanceService.js';
 import transactionLogger from '../services/transactionLogger.js';
+import { notificationService } from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -1855,6 +1856,14 @@ router.post('/grant-powaup/:userId', authenticate, authorize(['super_admin', 'ad
 
     console.log('[v0] Admin granted PowaUp - User:', userId, 'Amount:', amount, 'Previous Balance:', previousBalance, 'New Balance:', user.powaUpBalance);
 
+    // Send notification to user about PowaUp grant
+    try {
+      await notificationService.notifyAdminGrant(user._id.toString(), amount, 'PowaUp');
+    } catch (notifError) {
+      console.error('[v0] Error sending PowaUp grant notification:', notifError);
+      // Don't fail the grant if notification fails
+    }
+
     res.json({
       message: `Successfully granted ${amount} PowaUp to user`,
       user: {
@@ -1947,6 +1956,14 @@ router.post('/grant-powaup-by-code/:userCode', authenticate, authorize(['super_a
 
     console.log('[v0] Admin granted PowaUp by code - Code:', userCode, 'User:', user._id, 'Amount:', amount);
 
+    // Send notification to user about PowaUp grant
+    try {
+      await notificationService.notifyAdminGrant(user._id.toString(), amount, 'PowaUp');
+    } catch (notifError) {
+      console.error('[v0] Error sending PowaUp grant notification:', notifError);
+      // Don't fail the grant if notification fails
+    }
+
     res.json({
       message: `Successfully granted ${amount} PowaUp to ${user.fullName}`,
       user: {
@@ -2038,6 +2055,14 @@ router.post('/grant-usd', authenticate, authorize(['super_admin', 'admin']), asy
         currentBalance: user.currentBalance,
         source: 'admin_grant'
       });
+    }
+
+    // Send notification to user about admin USD grant
+    try {
+      await notificationService.notifyAdminGrant(user._id.toString(), amount, 'USD');
+    } catch (notifError) {
+      console.error('[v0] Error sending admin USD grant notification:', notifError);
+      // Don't fail the grant if notification fails
     }
 
     res.status(200).json({

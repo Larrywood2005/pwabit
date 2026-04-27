@@ -27,6 +27,76 @@ const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+// Send welcome email to new users
+const sendWelcomeEmail = async (email, fullName) => {
+  try {
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@powabitz.com',
+      to: email,
+      subject: 'Welcome to Powabitz - Start Your Investment Journey!',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+            <h2 style="color: white; margin: 0; font-size: 28px;">Welcome to Powabitz!</h2>
+            <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Thank you for registering</p>
+          </div>
+          <div style="background: white; padding: 30px; border: 1px solid #e0e0e0;">
+            <p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">Hi ${fullName},</p>
+            
+            <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 15px 0;">
+              Thank you for registering with Powabitz! We're excited to have you on board.
+            </p>
+            
+            <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 20px 0;">
+              You are now on your way to start earning a <strong>lifetime investment ROI</strong>. 
+              Our platform provides secure, transparent, and profitable investment opportunities designed to help you grow your wealth.
+            </p>
+            
+            <div style="background: #f0f4ff; padding: 20px; border-left: 4px solid #667eea; border-radius: 4px; margin: 20px 0;">
+              <h3 style="color: #667eea; margin: 0 0 10px 0; font-size: 16px;">Getting Started:</h3>
+              <ul style="color: #555; margin: 0; padding-left: 20px;">
+                <li style="margin: 8px 0;">Verify your email to activate your account</li>
+                <li style="margin: 8px 0;">Complete KYC verification to unlock all features</li>
+                <li style="margin: 8px 0;">Explore our investment packages and trading options</li>
+                <li style="margin: 8px 0;">Start earning daily returns on your investments</li>
+              </ul>
+            </div>
+            
+            <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 20px 0;">
+              <strong>What's Included:</strong>
+            </p>
+            <ul style="color: #555; font-size: 14px; line-height: 1.8;">
+              <li>✓ Daily investment returns (up to 2% daily)</li>
+              <li>✓ Secure wallet system for deposits and withdrawals</li>
+              <li>✓ Trading platform with real-time market data</li>
+              <li>✓ Referral program to earn passive income</li>
+              <li>✓ 24/7 customer support</li>
+            </ul>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.APP_URL || 'https://powabitz.com'}/dashboard" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 40px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                Go to Dashboard
+              </a>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 20px 0;">
+            
+            <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
+              If you have any questions, feel free to contact our support team at support@powabitz.com
+            </p>
+            <p style="color: #999; font-size: 12px; text-align: center; margin: 10px 0 0 0;">
+              Powabitz © 2024. All rights reserved.
+            </p>
+          </div>
+        </div>
+      `
+    });
+    console.log('[v0] Welcome email sent to:', email);
+  } catch (error) {
+    console.error('[v0] Welcome email send error:', error);
+  }
+};
+
 // Send verification email with OTP
 const sendVerificationEmail = async (email, otp) => {
   try {
@@ -220,6 +290,9 @@ router.post('/register', async (req, res) => {
     
     // Send OTP via email
     await sendVerificationEmail(email, verificationOTP);
+    
+    // Send welcome email to new user
+    await sendWelcomeEmail(email, fullName);
     
     const token = generateToken(user._id);
     

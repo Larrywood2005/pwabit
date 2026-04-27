@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Menu, X, LogOut, Home, TrendingUp, Activity, Settings, Wallet, Gamepad2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { getAvatarUrl } from '@/hooks/useDefaultAvatar';
+import NotificationBell from '@/components/NotificationBell';
 
 export default function DashboardLayout({
   children,
@@ -101,8 +102,13 @@ export default function DashboardLayout({
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           
-          {/* User Info - Mobile Responsive */}
-          <div className='flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial'>
+          {/* Notifications and User Info Container */}
+          <div className='flex items-center gap-2 sm:gap-3 ml-auto'>
+            {/* Notification Bell */}
+            <NotificationBell />
+            
+            {/* User Info - Mobile Responsive */}
+            <div className='flex items-center gap-2 sm:gap-3 min-w-0'>
             <img 
               src={getAvatarUrl(user?.avatar)} 
               alt={user?.fullName || 'User Avatar'}

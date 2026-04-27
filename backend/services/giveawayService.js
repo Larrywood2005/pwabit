@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Transaction from '../models/Transaction.js';
 import balanceService from './balanceService.js';
+import { notificationService } from './notificationService.js';
 import mongoose from 'mongoose';
 
 /**
@@ -210,6 +211,20 @@ export const sendUSDGiveaway = async (senderId, recipientUserCode, amount, otp, 
     
     await session.commitTransaction();
     
+    // Send notifications to both users about the USD transfer
+    try {
+      await notificationService.notifyFollowerFundsReceived(
+        recipient._id.toString(),
+        sender.fullName,
+        numAmount,
+        'USD',
+        sender._id.toString()
+      );
+    } catch (notifError) {
+      console.error('[v0] Error sending notification:', notifError);
+      // Don't fail the transfer if notification fails
+    }
+    
     console.log('[GIVEAWAY] USD transfer completed:', {
       transactionId: senderTx._id.toString(),
       sender: sender._id.toString(),
@@ -336,6 +351,20 @@ export const sendPowaUpGiveaway = async (senderId, recipientUserCode, amount) =>
     await recipientTx.save({ session });
     
     await session.commitTransaction();
+    
+    // Send notifications to recipient about PowaUp transfer
+    try {
+      await notificationService.notifyFollowerFundsReceived(
+        recipient._id.toString(),
+        sender.fullName,
+        amount,
+        'PowaUp',
+        sender._id.toString()
+      );
+    } catch (notifError) {
+      console.error('[v0] Error sending PowaUp notification:', notifError);
+      // Don't fail the transfer if notification fails
+    }
     
     console.log('[v0] PowaUp giveaway successful:', {
       sender: sender._id,
