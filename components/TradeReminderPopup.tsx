@@ -80,7 +80,7 @@ export default function TradeReminderPopup({ investments, onRemind }: TradeRemin
   ).filter(Boolean);
   
   return (
-    <div className="fixed left-2 right-2 sm:left-auto bottom-20 sm:bottom-24 space-y-2 sm:space-y-3 z-30 w-auto sm:max-w-sm sm:right-4">
+    <div className="fixed bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-4 sm:bottom-24 space-y-2 sm:space-y-3 z-30 w-[calc(100%-1rem)] max-w-sm px-0.5 sm:px-0">
       {remindersArray.map((investment) => (
         <div
           key={investment._id}

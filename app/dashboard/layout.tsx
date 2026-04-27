@@ -43,11 +43,11 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className='min-h-screen bg-background flex'>
+    <div className='min-h-screen bg-background flex overflow-x-hidden w-full'>
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 w-64 bg-card border-r border-border transform transition-transform duration-300 z-40 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static`}>
+      } lg:translate-x-0 lg:static overflow-y-auto`}>
         <div className='h-full flex flex-col'>
           {/* Logo */}
           <div className='p-6 border-b border-border'>
@@ -126,7 +126,7 @@ export default function DashboardLayout({
         </header>
 
         {/* Page Content - Mobile First */}
-        <main className='p-2 sm:p-4 md:p-6 max-w-full lg:max-w-7xl mx-auto overflow-x-hidden w-full'>
+        <main className='p-3 sm:p-4 md:p-6 max-w-full w-full overflow-x-hidden lg:max-w-7xl mx-auto'>
           {children}
         </main>
       </div>

@@ -94,8 +94,8 @@ export default function EnhancedTradeModal({
   ];
   
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-slate-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto border border-slate-700">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-slate-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto border border-slate-700 my-auto">
         {/* Header - Mobile Responsive */}
         <div className="sticky top-0 flex items-center justify-between p-3 sm:p-6 border-b border-slate-700 bg-slate-900/95 backdrop-blur z-10">
           <div className="flex-1 min-w-0">
