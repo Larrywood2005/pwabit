@@ -92,9 +92,9 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <div className='flex-1 flex flex-col overflow-x-hidden min-w-0 w-full'>
+      <div className='flex-1 flex flex-col min-w-0 w-full overflow-hidden'>
         {/* Top Bar */}
-        <header className='bg-card border-b border-border px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between lg:justify-end overflow-x-hidden min-w-0'>
+        <header className='bg-card border-b border-border px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between lg:justify-end min-w-0 relative'>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className='lg:hidden text-foreground flex-shrink-0'

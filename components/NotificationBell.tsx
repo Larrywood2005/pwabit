@@ -184,7 +184,7 @@ export default function NotificationBell() {
   };
 
   return (
-    <div className='relative' ref={dropdownRef}>
+    <div className='relative z-50' ref={dropdownRef}>
       {/* Notification Bell Button */}
       <button
         ref={buttonRef}
@@ -202,7 +202,7 @@ export default function NotificationBell() {
 
       {/* Notification Dropdown Panel */}
       {isOpen && (
-        <div className='absolute right-0 top-full mt-2 w-screen sm:w-96 max-h-96 sm:max-h-[500px] bg-card border border-border rounded-lg shadow-lg z-50 flex flex-col overflow-hidden'>
+        <div className='absolute right-0 top-full mt-2 w-screen sm:w-96 max-h-96 sm:max-h-[500px] bg-card border border-border rounded-lg shadow-xl z-[9999] flex flex-col overflow-hidden' style={{ pointerEvents: 'auto' }}>
           {/* Header */}
           <div className='flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-border bg-muted/50 flex-shrink-0'>
             <h3 className='font-semibold text-foreground text-sm sm:text-base'>Notifications</h3>

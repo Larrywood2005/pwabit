@@ -55,7 +55,7 @@ export default function Footer() {
               </a>
               <a href='tel:+1234567890' className='flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm'>
                 <Phone size={16} />
-                +44 7877 412816
+                +1 (234) 567-890
               </a>
               <div className='flex items-center gap-2 text-muted-foreground text-sm'>
                 <MapPin size={16} />
@@ -68,13 +68,13 @@ export default function Footer() {
           <div className='flex flex-col gap-4'>
             <h3 className='font-semibold text-foreground'>Follow Us</h3>
             <div className='flex items-center gap-4'>
-              <a href='#' className='p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors'>
+              <a href='https://x.com/PowaBitz' target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors'>
                 <Twitter size={20} />
               </a>
-              <a href='#' className='p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors'>
+              <a href='https://t.me/+-6a0vxmmxtk4ZjFk' target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors'>
                 <Facebook size={20} />
               </a>
-              <a href='#' className='p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors'>
+              <a href='https://t.me/+-6a0vxmmxtk4ZjFk' target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors'>
                 <Send size={20} />
               </a>
             </div>
@@ -102,10 +102,3 @@ export default function Footer() {
     </footer>
   );
 }
-
-
-
-
-
-
-
