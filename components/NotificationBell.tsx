@@ -261,7 +261,7 @@ export default function NotificationBell() {
                             <p className='text-muted-foreground text-xs sm:text-sm line-clamp-2 mt-0.5'>
                               {notification.message}
                             </p>
-                            {notification.amount > 0 && (
+                            {(notification.amount ?? 0) > 0 && (
                               <p className='text-primary font-semibold text-xs sm:text-sm mt-1'>
                                 +{notification.amount} {notification.currency}
                               </p>
