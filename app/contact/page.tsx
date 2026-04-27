@@ -23,14 +23,11 @@ export default function ContactPage() {
     e.preventDefault();
     
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-      
-      // Send message to admin dashboard
+      // Send message to admin dashboard - no auth required for contact form
       const response = await fetch('/api/admin/chat-messages', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` })
+          'Content-Type': 'application/json'
         },
         credentials: 'include',
         body: JSON.stringify({
@@ -49,9 +46,10 @@ export default function ContactPage() {
           setSubmitted(false);
           setFormData({ name: '', email: '', subject: '', message: '' });
         }, 3000);
-        console.log('[v0] Message sent successfully');
+        console.log('[v0] Contact message sent successfully');
       } else {
-        console.error('[v0] Failed to send message:', response.status);
+        const errorData = await response.json();
+        console.error('[v0] Failed to send message:', response.status, errorData);
         setSubmitted(true);
         setTimeout(() => {
           setSubmitted(false);
@@ -59,7 +57,7 @@ export default function ContactPage() {
         }, 3000);
       }
     } catch (error) {
-      console.error('[v0] Error sending message:', error);
+      console.error('[v0] Error sending contact message:', error);
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
@@ -95,7 +93,7 @@ export default function ContactPage() {
             {
               icon: Phone,
               title: 'Phone',
-              content: '+1 (234) 567-890',
+              content: '+1234567890',
               desc: 'Available 24/7'
             },
             {

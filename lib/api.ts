@@ -965,7 +965,10 @@ class ApiClient {
   private handleError(error: any): ApiError {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
-      let message = error.response?.data?.message || error.message || 'An error occurred';
+      const responseData = error.response?.data as any;
+      
+      // First try to get message from response data
+      let message = responseData?.message || responseData?.error || error.message || 'An error occurred';
       
       // Log detailed error info for debugging
       console.error(`[v0] API Error (${status}):`, {
@@ -973,6 +976,7 @@ class ApiClient {
         url: error.config?.url,
         method: error.config?.method,
         hasToken: !!this.getToken(),
+        responseData
       });
 
       // Handle specific status codes
@@ -982,6 +986,10 @@ class ApiClient {
         message = 'Unauthorized: Insufficient permissions or invalid token';
       } else if (status === 401) {
         message = 'Authentication failed: Please login again';
+      } else if (status === 400) {
+        // For 400 errors, the message is usually descriptive (e.g., from validation or giveaway service)
+        // Keep the message as-is since it contains important details
+        message = responseData?.message || responseData?.error || error.message || 'Invalid request';
       } else if (status === 500) {
         message = 'Server error: Please try again later';
       }

@@ -102,13 +102,6 @@ export function GiveawayModal({
         return;
       }
 
-      // Check balance
-      const maxAmount = type === 'usd' ? currentBalance : powaUpBalance;
-      if (parsedAmount > maxAmount) {
-        setError(`Insufficient ${type === 'usd' ? 'USD' : 'PowaUp'} balance`);
-        return;
-      }
-
       // For USD, need OTP
       if (type === 'usd') {
         if (!otp) {
@@ -118,7 +111,7 @@ export function GiveawayModal({
         setStep('otp');
       }
 
-      // Send giveaway
+      // Send giveaway - let backend validate available balance
       const result = await apiClient.sendGiveaway(recipientCode, parsedAmount, type, type === 'usd' ? otp : undefined);
 
       if (result.success) {

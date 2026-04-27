@@ -2,6 +2,80 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/backend/config/database';
 import ChatMessage from '@/backend/models/ChatMessage';
 
+export async function POST(request: NextRequest) {
+  try {
+    console.log('[DEBUG] Admin chat-messages POST request received');
+    
+    await connectDB();
+    
+    const body = await request.json();
+    const { userName, userEmail, message, subject, hasText, hasImage, image } = body;
+    
+    // Validate required fields
+    if (!userName || !userEmail) {
+      return NextResponse.json(
+        { error: 'userName and userEmail are required', success: false },
+        { status: 400 }
+      );
+    }
+    
+    if (!hasText && !hasImage) {
+      return NextResponse.json(
+        { error: 'Message must contain either text or image', success: false },
+        { status: 400 }
+      );
+    }
+    
+    console.log('[v0] Creating chat message from contact/support:', {
+      userName,
+      userEmail,
+      hasText,
+      hasImage,
+      subject
+    });
+    
+    // Create and save chat message - message will appear in admin dashboard
+    const chatMessage = new ChatMessage({
+      userId: null, // Anonymous messages from contact form
+      userEmail,
+      userName,
+      sender: 'contact',
+      message: message || undefined,
+      subject: subject || undefined,
+      image: image || undefined,
+      hasText,
+      hasImage,
+      isResolved: false,
+      timestamp: new Date()
+    });
+    
+    await chatMessage.save();
+    
+    console.log('[v0] Chat message saved successfully:', chatMessage._id);
+    
+    return NextResponse.json({
+      success: true,
+      messageId: chatMessage._id,
+      timestamp: new Date()
+    }, {
+      status: 201,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  } catch (error: any) {
+    console.error('[v0] Chat message save error:', error);
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Failed to save message', 
+        details: error.message 
+      },
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     console.log('[DEBUG] Admin chat-messages GET request received');
@@ -95,7 +169,7 @@ export async function PUT(request: NextRequest) {
     
     if (!messageId) {
       return NextResponse.json(
-        { error: 'messageId is required' },
+        { error: 'messageId is required', success: false },
         { status: 400 }
       );
     }
@@ -112,7 +186,7 @@ export async function PUT(request: NextRequest) {
     
     if (!updated) {
       return NextResponse.json(
-        { error: 'Message not found' },
+        { error: 'Message not found', success: false },
         { status: 404 }
       );
     }
@@ -120,12 +194,21 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: updated
+    }, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
   } catch (error: any) {
     console.error('[v0] Admin message update error:', error);
     return NextResponse.json(
-      { error: 'Failed to update message', details: error.message },
-      { status: 500 }
+      { 
+        success: false,
+        error: 'Failed to update message', 
+        details: error.message 
+      },
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }
