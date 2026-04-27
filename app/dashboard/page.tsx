@@ -257,7 +257,7 @@ export default function DashboardPage() {
         }}
       />
       
-      <div className='w-full max-w-full min-h-screen space-y-2 sm:space-y-3 md:space-y-4 lg:space-y-6 overflow-x-hidden px-3 sm:px-4 md:px-5 lg:px-6 py-3 sm:py-4 md:py-5 lg:py-6 pb-24 sm:pb-32 md:pb-16'>
+      <div className='w-full max-w-full overflow-x-hidden space-y-2 sm:space-y-3 md:space-y-4 lg:space-y-6 pb-24 sm:pb-32 md:pb-16'>
         {/* User Status Alert */}
         <UserStatusAlert user={user} />
 
@@ -327,8 +327,8 @@ export default function DashboardPage() {
 
             {/* PowaUp Purchase Modal */}
             {showPowaUpModal && (
-              <div className='fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4'>
-                <div className='bg-card rounded-lg border border-border w-full max-w-md p-4 md:p-6 max-h-[90vh] overflow-y-auto'>
+              <div className='fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto'>
+                <div className='bg-card rounded-lg border border-border w-full max-w-md p-4 md:p-6 my-auto max-h-[90vh] overflow-y-auto'>
                   <div className='flex items-center justify-between mb-4 md:mb-6'>
                     <div className='flex items-center gap-2'>
                       <div className='p-2 md:p-2.5 bg-purple-500/20 rounded-lg'>

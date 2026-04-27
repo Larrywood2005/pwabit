@@ -43,11 +43,11 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className='min-h-screen bg-background flex overflow-x-hidden w-full'>
+    <div className='min-h-screen bg-background flex overflow-hidden w-screen'>
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 w-64 bg-card border-r border-border transform transition-transform duration-300 z-40 ${
+      <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-card border-r border-border transform transition-transform duration-300 ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 lg:static overflow-y-auto`}>
+      } lg:translate-x-0 lg:static overflow-y-auto overflow-x-hidden`}>
         <div className='h-full flex flex-col'>
           {/* Logo */}
           <div className='p-6 border-b border-border'>
@@ -91,42 +91,42 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <div className='flex-1'>
+      <div className='flex-1 flex flex-col overflow-x-hidden min-w-0 w-full'>
         {/* Top Bar */}
-        <header className='bg-card border-b border-border px-6 py-4 flex items-center justify-between lg:justify-end'>
+        <header className='bg-card border-b border-border px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex items-center justify-between lg:justify-end overflow-x-hidden min-w-0'>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className='lg:hidden text-foreground'
+            className='lg:hidden text-foreground flex-shrink-0'
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           
-          {/* User Info */}
-          <div className='flex items-center gap-3 sm:gap-4'>
+          {/* User Info - Mobile Responsive */}
+          <div className='flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial'>
             <img 
               src={getAvatarUrl(user?.avatar)} 
               alt={user?.fullName || 'User Avatar'}
-              className='w-10 h-10 rounded-full object-cover border-2 border-primary/20 flex-shrink-0'
+              className='w-8 sm:w-10 h-8 sm:h-10 rounded-full object-cover border-2 border-primary/20 flex-shrink-0'
               onError={(e) => {
                 (e.target as HTMLImageElement).src = getAvatarUrl();
               }}
             />
-            <div className='text-right'>
-              <p className='font-semibold text-foreground text-sm sm:text-base'>{user?.fullName || 'User'}</p>
-              <div className='flex items-center gap-2 justify-end flex-wrap'>
+            <div className='text-right min-w-0 flex-1 sm:flex-initial'>
+              <p className='font-semibold text-foreground text-xs sm:text-sm truncate'>{user?.fullName || 'User'}</p>
+              <div className='flex items-center gap-1 sm:gap-2 justify-end flex-wrap'>
                 {user?.userCode && (
-                  <span className='text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded whitespace-nowrap'>
+                  <span className='text-[9px] sm:text-[10px] font-mono bg-primary/10 text-primary px-1.5 sm:px-2 py-0.5 rounded whitespace-nowrap'>
                     {user.userCode}
                   </span>
                 )}
-                <p className='text-xs text-muted-foreground truncate hidden sm:block'>{user?.email || 'Loading...'}</p>
+                <p className='text-[9px] sm:text-[10px] text-muted-foreground truncate hidden sm:block'>{user?.email || 'Loading...'}</p>
               </div>
             </div>
           </div>
         </header>
 
-        {/* Page Content - Mobile First */}
-        <main className='p-3 sm:p-4 md:p-6 max-w-full w-full overflow-x-hidden lg:max-w-7xl mx-auto'>
+        {/* Page Content - Mobile First with Responsive Padding */}
+        <main className='flex-1 overflow-x-hidden overflow-y-auto px-2 sm:px-3 md:px-4 lg:px-6 py-3 sm:py-4 md:py-5 lg:py-6 max-w-full w-full'>
           {children}
         </main>
       </div>
