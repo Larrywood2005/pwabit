@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Twitter, Send } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -75,10 +75,7 @@ export default function Footer() {
                 <Facebook size={20} />
               </a>
               <a href='#' className='p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors'>
-                <Linkedin size={20} />
-              </a>
-              <a href='#' className='p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors'>
-                <Instagram size={20} />
+                <Send size={20} />
               </a>
             </div>
           </div>
@@ -105,3 +102,10 @@ export default function Footer() {
     </footer>
   );
 }
+
+
+
+
+
+
+

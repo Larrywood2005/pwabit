@@ -91,21 +91,31 @@ export function AICustomerSupport() {
     setIsLoading(true);
 
     try {
-      // Save message to database for admin viewing
-      const formData = new FormData();
-      formData.append('userId', user.id);
-      formData.append('message', inputValue || '');
-      if (selectedImage?.file) {
-        formData.append('image', selectedImage.file);
-      }
-
-      const saveResponse = await fetch('/api/chat-messages', {
+      // Save message to database for admin viewing via admin messages API
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      
+      const saveResponse = await fetch('/api/admin/chat-messages', {
         method: 'POST',
-        body: formData
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          userId: user.id,
+          userName: user.fullName || 'User',
+          userEmail: user.email || 'unknown@email.com',
+          message: inputValue || '[User sent an image]',
+          image: selectedImage?.preview || undefined,
+          hasText: !!inputValue.trim(),
+          hasImage: !!selectedImage
+        })
       });
 
       if (!saveResponse.ok) {
-        console.warn('[v0] Failed to save message to database');
+        console.warn('[v0] Failed to save message to admin dashboard');
+      } else {
+        console.log('[v0] Message saved to admin dashboard successfully');
       }
 
       // Get AI response

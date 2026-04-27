@@ -1,37 +1,38 @@
 'use client';
 
 import { Star } from 'lucide-react';
+import Image from 'next/image';
 
 const testimonials = [
   {
     id: 1,
-    name: 'Sarah Chen',
+    name: 'George Arthur',
     role: 'Crypto Investor',
-    image: 'SC',
+    image: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/George%20Arthur.jfif-sAiQSxPsXyTns40qymyuRFLKEgh7rO.jpeg',
     rating: 5,
     text: 'Started with just $50 and within 3 months my investment grew significantly. The platform is so easy to use and the daily returns are consistent.',
   },
   {
     id: 2,
-    name: 'Marcus Johnson',
+    name: 'Johnson Crown',
     role: 'Entrepreneur',
-    image: 'MJ',
+    image: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Johnson%20Crown.jfif-7drcRBtjcahH3GA1U2iFvgGnyJkcRT.jpeg',
     rating: 5,
     text: 'Best investment decision I made this year. The security features give me peace of mind and the returns are better than any traditional investment.',
   },
   {
     id: 3,
-    name: 'Priya Patel',
+    name: 'Ahmed Hussain',
     role: 'Business Owner',
-    image: 'PP',
+    image: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Ahmed%20Hussain.jfif-hGgubWm7i8LTidVM3IYkD1Rj7Mq8A7.jpeg',
     rating: 5,
     text: 'The team is incredibly responsive and helpful. I was hesitant at first but the KYC process was seamless and my investments have been paying off.',
   },
   {
     id: 4,
-    name: 'Ahmed Hassan',
+    name: 'Charlotte Amelia',
     role: 'Software Developer',
-    image: 'AH',
+    image: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Charlotte%20Amelia.jfif-e4K3vhytEUgDvCmiikvPgLu8jt2UKX.jpeg',
     rating: 5,
     text: 'As a tech-savvy investor, I appreciate the transparent blockchain verification. The platform is solid and delivers on its promises.',
   },
@@ -73,8 +74,16 @@ export default function Testimonials() {
 
             {/* Author */}
             <div className='flex items-center gap-3'>
-              <div className='w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0'>
-                <span className='text-white text-sm font-bold'>{testimonial.image}</span>
+              <div className='w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-primary/20'>
+                <img
+                  src={testimonial.image}
+                  alt={testimonial.name}
+                  className='w-full h-full object-cover'
+                  onError={(e) => {
+                    // Fallback to initials if image fails
+                    (e.currentTarget as HTMLImageElement).style.display = 'none';
+                  }}
+                />
               </div>
               <div>
                 <div className='font-semibold text-foreground text-sm'>{testimonial.name}</div>

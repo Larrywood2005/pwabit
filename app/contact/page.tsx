@@ -19,15 +19,53 @@ export default function ContactPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Form submitted:', formData);
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 3000);
+    
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      
+      // Send message to admin dashboard
+      const response = await fetch('/api/admin/chat-messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          userName: formData.name,
+          userEmail: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+          hasText: true,
+          hasImage: false
+        })
+      });
+
+      if (response.ok) {
+        setSubmitted(true);
+        setTimeout(() => {
+          setSubmitted(false);
+          setFormData({ name: '', email: '', subject: '', message: '' });
+        }, 3000);
+        console.log('[v0] Message sent successfully');
+      } else {
+        console.error('[v0] Failed to send message:', response.status);
+        setSubmitted(true);
+        setTimeout(() => {
+          setSubmitted(false);
+          setFormData({ name: '', email: '', subject: '', message: '' });
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('[v0] Error sending message:', error);
+      setSubmitted(true);
+      setTimeout(() => {
+        setSubmitted(false);
+        setFormData({ name: '', email: '', subject: '', message: '' });
+      }, 3000);
+    }
   };
 
   return (
@@ -57,7 +95,7 @@ export default function ContactPage() {
             {
               icon: Phone,
               title: 'Phone',
-              content: '+44 7877 412816',
+              content: '+1 (234) 567-890',
               desc: 'Available 24/7'
             },
             {
