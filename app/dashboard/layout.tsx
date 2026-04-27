@@ -128,6 +128,7 @@ export default function DashboardLayout({
                 <p className='text-[9px] sm:text-[10px] text-muted-foreground truncate hidden sm:block'>{user?.email || 'Loading...'}</p>
               </div>
             </div>
+            </div>
           </div>
         </header>
 

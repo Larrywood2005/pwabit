@@ -1,5 +1,5 @@
 import Notification from '../models/Notification.js';
-import { io } from '../server.js';
+// import { io } from '../server.js';
 
 export const notificationService = {
   // Create and broadcast notification
@@ -167,3 +167,4 @@ export const notificationService = {
 };
 
 export default notificationService;
+
