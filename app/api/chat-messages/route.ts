@@ -20,34 +20,93 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Fetch user for caching name and email
-    const user = await User.findById(userId).select('fullName email');
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+    // Fetch user for caching name and email (only if userId provided)
+    let userName = 'Anonymous User';
+    let userEmail = 'guest@example.com';
+    
+    if (userId) {
+      const user = await User.findById(userId).select('fullName email');
+      if (!user) {
+        return NextResponse.json(
+          { error: 'User not found' },
+          { status: 404 }
+        );
+      }
+      userName = user.fullName || 'User';
+      userEmail = user.email || 'guest@example.com';
     }
     
-    // Handle image upload if present
-    let imageUrl = null;
+    // Image URL or Blob URL - passed from client
+    let imageUrl = formData.get('imageUrl') as string | null;
     let imageType = null;
-    if (image) {
-      // For production, use Vercel Blob or S3
-      // For now, store as base64 or use a temp URL
+    
+    if (image && !imageUrl) {
+      // If file is provided but no URL, convert to base64 as fallback
       const arrayBuffer = await image.arrayBuffer();
       imageType = image.type;
       imageUrl = `data:${imageType};base64,${Buffer.from(arrayBuffer).toString('base64')}`;
+    } else if (image && imageUrl) {
+      imageType = image.type;
     }
+    
+    console.log('[v0] Creating chat message:', {
+      userId,
+      userName,
+      userEmail,
+      hasMessage: !!message?.trim(),
+      hasImage: !!imageUrl,
+      timestamp: new Date().toISOString()
+    });
     
     // Create and save chat message
     const chatMessage = new ChatMessage({
-      userId,
-      userEmail: user.email,
-      userName: user.fullName,
-      sender: 'user',
+      userId: userId || null,
+      userEmail,
+      userName,
+      sender: userId ? 'user' : 'contact',
       message: message?.trim() || undefined,
       image: imageUrl,
+      imageType,
+      hasText: !!message?.trim(),
+      hasImage: !!imageUrl,
+      timestamp: new Date()
+    });
+    
+    await chatMessage.save();
+    
+    console.log('[v0] Chat message saved successfully:', {
+      messageId: chatMessage._id,
+      sender: chatMessage.sender,
+      timestamp: chatMessage.timestamp
+    });
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Message sent successfully',
+      messageId: chatMessage._id,
+      timestamp: new Date().toISOString()
+    }, {
+      status: 201,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  } catch (error: any) {
+    console.error('[v0] Chat message error:', {
+      message: error.message,
+      stack: error.stack
+    });
+    return NextResponse.json(
+      { 
+        success: false,
+        error: 'Failed to send message',
+        details: error.message || 'Unknown error'
+      },
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
       imageType,
       hasText: !!message?.trim(),
       hasImage: !!image

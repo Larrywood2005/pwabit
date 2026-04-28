@@ -26,18 +26,37 @@ export default function KYCModal({ isOpen, onClose, balance, onSuccess }: KYCMod
     identityPhoto: ''
   });
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Convert to base64 for simplicity
-      const reader = new FileReader();
-      reader.onloadend = () => {
+      try {
+        // Upload to Vercel Blob for permanent storage
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to upload file');
+        }
+        
+        const data = await response.json();
+        
         setFormData(prev => ({
           ...prev,
-          identityPhoto: reader.result as string
+          identityPhoto: data.url // Use Blob URL instead of base64
         }));
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        console.error('[v0] File upload error:', err);
+        toast({
+          title: 'Error',
+          description: 'Failed to upload document. Please try again.',
+          variant: 'destructive'
+        });
+      }
     }
   };
 

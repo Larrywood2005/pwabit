@@ -11,7 +11,6 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { UserStatusAlert } from '@/components/UserStatusAlert';
 import TradeReminderPopup from '@/components/TradeReminderPopup';
 import TradingHistory from '@/components/TradingHistory';
-import LockedFundsDisplay from '@/components/LockedFundsDisplay';
 import PuzzleGame from '@/components/PuzzleGame';
 import KYCModal from '@/components/KYCModal';
 import { RealtimeBalanceCard } from '@/components/RealtimeBalanceCard';
@@ -303,9 +302,6 @@ export default function DashboardPage() {
             {successMessage}
           </div>
         )}
-
-        {/* Locked Funds Display */}
-        <LockedFundsDisplay investments={investments} />
 
         {/* Loading State */}
         {loading && (
