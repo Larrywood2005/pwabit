@@ -15,12 +15,10 @@ export default function LockedFundsDisplay({ investments = [] }: LockedFundsDisp
   useEffect(() => {
     if (!investments || investments.length === 0) return;
 
-    // Calculate locked funds from active trades
+    // Calculate locked funds from ALL investments (active or completed)
     const totalLocked = investments.reduce((sum, inv) => {
-      if (inv.tradeInProgress && inv.lockedAmount) {
-        return sum + inv.lockedAmount;
-      }
-      return sum;
+      // Include both active trades and all other investment amounts
+      return sum + (inv.lockedAmount || inv.amount || 0);
     }, 0);
 
     // Count active trades
@@ -56,7 +54,7 @@ export default function LockedFundsDisplay({ investments = [] }: LockedFundsDisp
             <div>
               <h3 className="font-bold text-amber-900">Funds Locked in Trading</h3>
               <p className="text-sm text-amber-800">
-                {activeTradesCount} active {activeTradesCount === 1 ? 'trade' : 'trades'} in progress
+                Your investment funds locked for 6 months
               </p>
             </div>
           </div>
@@ -66,11 +64,11 @@ export default function LockedFundsDisplay({ investments = [] }: LockedFundsDisp
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 w-full">
           {/* Locked Amount */}
           <div className="p-3 sm:p-4 rounded-lg bg-white/50 backdrop-blur min-w-0">
-            <p className="text-xs sm:text-sm text-amber-700 font-semibold mb-2 break-words">AMOUNT LOCKED</p>
+            <p className="text-xs sm:text-sm text-amber-700 font-semibold mb-2 break-words">TOTAL LOCKED</p>
             <p className="text-lg sm:text-2xl font-bold text-amber-900 break-words">
               ${lockedFunds.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
-            <p className="text-xs text-amber-700 mt-1 break-words">Cannot be withdrawn</p>
+            <p className="text-xs text-amber-700 mt-1 break-words">6-month lock period</p>
           </div>
 
           {/* Pending Profit */}
@@ -82,18 +80,18 @@ export default function LockedFundsDisplay({ investments = [] }: LockedFundsDisp
             <p className="text-lg sm:text-2xl font-bold text-green-600 break-words">
               +${totalPendingProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
-            <p className="text-xs text-green-700 mt-1 break-words">After 24-hour completion</p>
+            <p className="text-xs text-green-700 mt-1 break-words">Active trades earnings</p>
           </div>
 
-          {/* Time Status */}
+          {/* Active Trades */}
           <div className="p-3 sm:p-4 rounded-lg bg-white/50 backdrop-blur min-w-0">
             <p className="text-xs sm:text-sm text-blue-700 font-semibold mb-2 flex items-center gap-2 break-words">
               <Clock size={12} className="flex-shrink-0" />
-              LOCK STATUS
+              TOTAL INVESTMENTS
             </p>
-            <p className="text-lg sm:text-2xl font-bold text-blue-600 break-words">{activeTradesCount}</p>
+            <p className="text-lg sm:text-2xl font-bold text-blue-600 break-words">{investments.length}</p>
             <p className="text-xs text-blue-700 mt-1 break-words">
-              {activeTradesCount === 1 ? 'Trade' : 'Trades'} in 24h cycle
+              {activeCount} {activeCount === 1 ? 'trade' : 'trades'} in progress
             </p>
           </div>
         </div>
@@ -102,9 +100,9 @@ export default function LockedFundsDisplay({ investments = [] }: LockedFundsDisp
         <div className="p-3 sm:p-4 rounded-lg bg-white/40 border border-amber-500/30 flex gap-2 sm:gap-3 w-full min-w-0">
           <AlertCircle className="text-amber-700 flex-shrink-0 mt-0.5 w-4 h-4 sm:w-5 sm:h-5" />
           <div className="text-xs sm:text-sm text-amber-800 min-w-0 break-words">
-            <p className="font-semibold">Your funds are temporarily locked</p>
+            <p className="font-semibold">Your funds are locked for the 6-month period</p>
             <p className="mt-1">
-              This is by design to ensure secure trading. Your money will be returned with profits once the 24-hour period ends. You cannot withdraw locked funds until trading is complete.
+              All investment funds shown above are locked for trading and cannot be withdrawn for 6 months. After 6 months, your principal plus all earnings will be available for withdrawal.
             </p>
           </div>
         </div>
@@ -112,13 +110,13 @@ export default function LockedFundsDisplay({ investments = [] }: LockedFundsDisp
         {/* Breakdown */}
         <div className="text-xs text-amber-700 space-y-1 w-full">
           <p className="break-words">
-            <strong className="text-amber-900">How it works:</strong>
+            <strong className="text-amber-900">6-Month Lock Period:</strong>
           </p>
           <ul className="list-disc list-inside space-y-1 break-words">
-            <li>Funds are locked immediately when you place a trade</li>
-            <li>Real-time trading occurs with your locked amount</li>
-            <li>After 24 hours, profit is automatically added to your balance</li>
-            <li>Your original amount is also returned to your account</li>
+            <li>All funds are locked immediately upon investment</li>
+            <li>Daily trading occurs with your locked amount</li>
+            <li>Profits are earned and added to your account</li>
+            <li>After 6 months: Full withdrawal available (principal + all profits)</li>
           </ul>
         </div>
       </div>

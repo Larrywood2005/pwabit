@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { X, Mail, DollarSign, TrendingUp, Download, Wallet, CheckCircle, Clock, Gift } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 
@@ -8,6 +9,32 @@ interface UserDetailsModalProps {
   userId: string;
   onClose: () => void;
 }
+
+const getCryptoLogo = (type: string) => {
+  const logos: Record<string, { url: string; alt: string }> = {
+    bitcoin: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/btc.jfif-2nHpiXE4h7XoZLLiqUMYeYRMOsoZ1r.jpeg',
+      alt: 'Bitcoin Logo'
+    },
+    ethereum: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/eth-4ztM9KbUf0Dv4MutndvUsNRDWlul6z.png',
+      alt: 'Ethereum Logo'
+    },
+    usdt: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/USDT-i2kDVSUPCEi1vjtbfUjgNlHjefh00m.png',
+      alt: 'USDT Logo'
+    },
+    usdc: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/USDT-i2kDVSUPCEi1vjtbfUjgNlHjefh00m.png',
+      alt: 'USDC Logo'
+    },
+    other: {
+      url: '',
+      alt: ''
+    }
+  };
+  return logos[type] || logos.other;
+};
 
 export function AdminUserDetailsModal({ userId, onClose }: UserDetailsModalProps) {
   const [data, setData] = useState<any>(null);
@@ -105,6 +132,7 @@ export function AdminUserDetailsModal({ userId, onClose }: UserDetailsModalProps
   const allTransactions = data.allTransactions || [];
   const gameRewards = data.gameRewards || [];
   const stats = data.stats || {};
+  const walletAddresses = data.walletAddresses || [];
 
   return (
     <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
@@ -448,6 +476,58 @@ export function AdminUserDetailsModal({ userId, onClose }: UserDetailsModalProps
               </div>
             </div>
           </div>
+
+          {/* 💳 Withdrawal Wallet Addresses */}
+          {walletAddresses.length > 0 && (
+            <div className='space-y-4'>
+              <h3 className='font-bold text-lg text-foreground'>💳 Withdrawal Wallet Addresses</h3>
+              <div className='space-y-3'>
+                {walletAddresses.map((wallet: any, idx: number) => {
+                  const logo = getCryptoLogo(wallet.walletType);
+                  return (
+                    <div key={idx} className='p-4 rounded-lg border border-border hover:border-primary/50 transition-all bg-muted/30'>
+                      <div className='flex items-start gap-3'>
+                        {/* Crypto Logo */}
+                        {logo.url && (
+                          <div className='w-8 h-8 relative flex-shrink-0'>
+                            <Image
+                              src={logo.url}
+                              alt={logo.alt}
+                              fill
+                              className='object-contain rounded-full'
+                              sizes="32px"
+                            />
+                          </div>
+                        )}
+                        
+                        {/* Wallet Details */}
+                        <div className='flex-1 min-w-0'>
+                          <div className='flex items-center justify-between gap-2 mb-1'>
+                            <p className='font-semibold text-foreground'>{wallet.walletType.toUpperCase()}</p>
+                            {wallet.isDefault && (
+                              <span className='px-2 py-0.5 bg-blue-500/20 text-blue-600 text-xs font-semibold rounded-full'>
+                                Default
+                              </span>
+                            )}
+                          </div>
+                          <p className='text-xs text-muted-foreground font-mono break-all'>{wallet.walletAddress}</p>
+                          <div className='mt-2 flex items-center gap-2'>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              wallet.status === 'verified' ? 'bg-green-500/20 text-green-600' :
+                              wallet.status === 'pending' ? 'bg-yellow-500/20 text-yellow-600' :
+                              'bg-gray-500/20 text-gray-600'
+                            }`}>
+                              {wallet.status || 'Active'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Close button at bottom */}
           <div className='flex justify-end pt-4'>

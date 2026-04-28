@@ -214,13 +214,11 @@ export default function WalletPage() {
     };
   }, [user?.id]);
 
-  // Initial fetch and polling fallback
+  // Initial fetch only (no polling/auto-refresh)
   useEffect(() => {
     if (user) {
       fetchWalletData();
-      // Poll every 15 seconds as fallback
-      const interval = setInterval(fetchWalletData, 15000);
-      return () => clearInterval(interval);
+      // No polling - fetch only on initial load. Users see real-time updates via Socket.io
     }
   }, [user]);
 

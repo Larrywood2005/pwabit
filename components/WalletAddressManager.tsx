@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,32 @@ interface WalletAddress {
   status: string;
   addedAt: string;
 }
+
+const getCryptoLogo = (type: string) => {
+  const logos: Record<string, { url: string; alt: string }> = {
+    bitcoin: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/btc.jfif-2nHpiXE4h7XoZLLiqUMYeYRMOsoZ1r.jpeg',
+      alt: 'Bitcoin Logo'
+    },
+    ethereum: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/eth-4ztM9KbUf0Dv4MutndvUsNRDWlul6z.png',
+      alt: 'Ethereum Logo'
+    },
+    usdt: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/USDT-i2kDVSUPCEi1vjtbfUjgNlHjefh00m.png',
+      alt: 'USDT Logo'
+    },
+    usdc: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/USDT-i2kDVSUPCEi1vjtbfUjgNlHjefh00m.png',
+      alt: 'USDC Logo'
+    },
+    other: {
+      url: '',
+      alt: ''
+    }
+  };
+  return logos[type] || logos.other;
+};
 
 export default function WalletAddressManager() {
   const [wallets, setWallets] = useState<WalletAddress[]>([]);
@@ -100,17 +127,17 @@ export default function WalletAddressManager() {
   return (
     <div className="space-y-6">
       {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
         </div>
       )}
 
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center gap-2">
             <CardTitle>Withdrawal Wallet Addresses</CardTitle>
             {!showForm && (
-              <Button onClick={() => setShowForm(true)}>
+              <Button onClick={() => setShowForm(true)} size="sm">
                 Add Wallet Address
               </Button>
             )}
@@ -118,55 +145,76 @@ export default function WalletAddressManager() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-center text-gray-500">Loading wallets...</p>
+            <p className="text-center text-gray-500 text-sm">Loading wallets...</p>
           ) : wallets.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500 mb-4">No wallet addresses added yet</p>
+              <p className="text-gray-500 mb-4 text-sm">No wallet addresses added yet</p>
               <Button onClick={() => setShowForm(true)}>
                 Add Your First Wallet
               </Button>
             </div>
           ) : (
             <div className="space-y-3">
-              {wallets.map((wallet) => (
-                <div
-                  key={wallet._id}
-                  className="p-4 border rounded-lg hover:border-blue-300 transition"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="font-medium">{wallet.walletType.toUpperCase()}</div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        <p>{wallet.walletAddress}</p>
-                      </div>
-                      <div className="mt-2 flex gap-2">
-                        {wallet.isDefault && (
-                          <Badge className="bg-blue-100 text-blue-800">Default</Badge>
+              {wallets.map((wallet) => {
+                const logo = getCryptoLogo(wallet.walletType);
+                return (
+                  <div
+                    key={wallet._id}
+                    className="p-4 border rounded-lg hover:border-blue-300 transition"
+                  >
+                    <div className="flex justify-between items-start gap-3">
+                      {/* Crypto Logo and Type */}
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        {logo.url && (
+                          <div className="w-10 h-10 relative flex-shrink-0">
+                            <Image
+                              src={logo.url}
+                              alt={logo.alt}
+                              fill
+                              className="object-contain rounded-full"
+                              sizes="40px"
+                            />
+                          </div>
                         )}
-                        <Badge variant="outline">{wallet.status}</Badge>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm">{wallet.walletType.toUpperCase()}</div>
+                          <div className="text-xs text-gray-600 mt-1 break-all">
+                            <p className="font-mono">{wallet.walletAddress}</p>
+                          </div>
+                          <div className="mt-2 flex gap-2 flex-wrap">
+                            {wallet.isDefault && (
+                              <Badge className="bg-blue-100 text-blue-800 text-xs">Default</Badge>
+                            )}
+                            <Badge variant="outline" className="text-xs">{wallet.status}</Badge>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {!wallet.isDefault && (
+                      
+                      {/* Actions */}
+                      <div className="flex gap-2 flex-shrink-0">
+                        {!wallet.isDefault && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSetDefault(wallet._id)}
+                            className="text-xs"
+                          >
+                            Default
+                          </Button>
+                        )}
                         <Button
                           size="sm"
-                          variant="outline"
-                          onClick={() => handleSetDefault(wallet._id)}
+                          variant="destructive"
+                          onClick={() => setDeleteConfirm({ show: true, walletId: wallet._id })}
+                          className="text-xs"
                         >
-                          Set Default
+                          Delete
                         </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => setDeleteConfirm({ show: true, walletId: wallet._id })}
-                      >
-                        Delete
-                      </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
