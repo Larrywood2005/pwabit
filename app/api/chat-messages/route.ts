@@ -107,27 +107,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-      imageType,
-      hasText: !!message?.trim(),
-      hasImage: !!image
-    });
-    
-    await chatMessage.save();
-    
-    return NextResponse.json({
-      success: true,
-      messageId: chatMessage._id,
-      timestamp: new Date()
-    });
-  } catch (error: any) {
-    console.error('[v0] Chat message save error:', error);
-    return NextResponse.json(
-      { error: 'Failed to save message', details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
