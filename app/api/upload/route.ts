@@ -29,15 +29,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert file to buffer
-    const buffer = await file.arrayBuffer();
-
     // Generate unique filename with timestamp
     const timestamp = Date.now();
     const filename = `kyc-${timestamp}-${file.name}`;
 
     // Upload to Vercel Blob with permanent storage
-    const blob = await put(filename, new Uint8Array(buffer), {
+    // Pass the File object directly - Vercel Blob handles the conversion
+    const blob = await put(filename, file, {
       access: 'private', // Keep KYC documents private
       addRandomSuffix: true,
       contentType: file.type,
