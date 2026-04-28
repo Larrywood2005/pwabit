@@ -98,7 +98,7 @@ function RegisterForm() {
         phone: formData.phone,
         referralCode: referralCode || undefined
       });
-      router.push('/dashboard');
+      router.push('/auth/register-success');
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {

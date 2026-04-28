@@ -23,7 +23,7 @@ export function GiveawayModal({
 }: GiveawayModalProps) {
   const [recipientCode, setRecipientCode] = useState('');
   const [amount, setAmount] = useState('');
-  const [type, setType] = useState<'usd' | 'powaup'>('usd');
+  const [type, setType] = useState<'usd' | 'powaup'>('powaup');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -137,8 +137,8 @@ export function GiveawayModal({
   const maxAmount = type === 'usd' ? currentBalance : powaUpBalance;
 
   return (
-    <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
-      <div className='bg-card rounded-lg max-w-md w-full'>
+    <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4'>
+      <div className='bg-card rounded-lg w-full max-w-md max-h-[90vh] sm:max-h-none overflow-y-auto sm:overflow-visible flex flex-col'>
         {/* Header */}
         <div className='flex items-center justify-between p-6 border-b border-border'>
           <h2 className='text-xl font-bold text-foreground'>Send Giveaway</h2>
@@ -164,13 +164,13 @@ export function GiveawayModal({
               <button
                 type='button'
                 onClick={() => setType('usd')}
-                className={`p-3 rounded-lg border-2 transition-all ${
-                  type === 'usd'
-                    ? 'border-primary bg-primary/10 text-primary font-semibold'
-                    : 'border-border text-muted-foreground hover:border-primary/50'
-                }`}
+                disabled={true}
+                className='p-3 rounded-lg border-2 transition-all opacity-50 cursor-not-allowed border-border text-muted-foreground hover:border-border relative'
               >
-                💰 USD
+                <div className='flex flex-col items-center gap-1'>
+                  <span>💰 USD</span>
+                  <span className='text-xs font-semibold text-orange-500 bg-orange-500/20 px-2 py-0.5 rounded'>Coming Soon</span>
+                </div>
               </button>
               <button
                 type='button'

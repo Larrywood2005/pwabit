@@ -202,9 +202,9 @@ export default function NotificationBell() {
 
       {/* Notification Dropdown Panel */}
       {isOpen && (
-        <div className='absolute right-0 top-full mt-2 w-screen sm:w-96 max-h-96 sm:max-h-[500px] bg-card border border-border rounded-lg shadow-xl z-[9999] flex flex-col overflow-hidden' style={{ pointerEvents: 'auto' }}>
+        <div className='fixed sm:absolute bottom-0 sm:bottom-auto left-0 sm:left-auto right-0 sm:right-0 top-auto sm:top-full sm:mt-2 h-screen sm:h-auto sm:max-h-[500px] w-full sm:w-96 bg-card border-t sm:border sm:rounded-lg border-border shadow-2xl sm:shadow-xl z-[9999] flex flex-col overflow-hidden' style={{ pointerEvents: 'auto' }}>
           {/* Header */}
-          <div className='flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-border bg-muted/50 flex-shrink-0'>
+          <div className='flex items-center justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-border bg-muted/50 flex-shrink-0 sticky top-0'>
             <h3 className='font-semibold text-foreground text-sm sm:text-base'>Notifications</h3>
             <div className='flex items-center gap-2'>
               {unreadCount > 0 && (
