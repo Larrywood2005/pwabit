@@ -43,15 +43,15 @@ export async function POST(request: NextRequest) {
 
     console.log('[v0] KYC document uploaded to Blob:', {
       filename: blob.pathname,
-      size: blob.size,
-      url: blob.url
+      url: blob.url,
+      fileSize: file.size
     });
 
     return NextResponse.json({
       success: true,
       url: blob.url,
       filename: blob.pathname,
-      size: blob.size
+      fileSize: file.size
     }, {
       status: 200,
       headers: {
