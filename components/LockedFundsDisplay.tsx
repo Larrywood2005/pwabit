@@ -91,7 +91,7 @@ export default function LockedFundsDisplay({ investments = [] }: LockedFundsDisp
             </p>
             <p className="text-lg sm:text-2xl font-bold text-blue-600 break-words">{investments.length}</p>
             <p className="text-xs text-blue-700 mt-1 break-words">
-              {activeCount} {activeCount === 1 ? 'trade' : 'trades'} in progress
+              {activeTradesCount} {activeTradesCount === 1 ? 'trade' : 'trades'} in progress
             </p>
           </div>
         </div>
