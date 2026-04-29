@@ -1067,7 +1067,7 @@ router.get('/deposits/pending', authenticate, authorize(['super_admin', 'admin']
     const deposits = await Transaction.find({
       type: 'deposit',
       status: 'pending'
-    }).populate('userId', 'fullName email').sort('-createdAt');
+    }).populate('userId', 'fullName email phone kyc kycStatus status').sort('-createdAt');
 
     res.json(deposits);
   } catch (error) {
@@ -1080,7 +1080,7 @@ router.get('/deposits/all', authenticate, authorize(['super_admin', 'admin']), a
   try {
     const deposits = await Transaction.find({
       type: 'deposit'
-    }).populate('userId', 'fullName email').sort('-createdAt');
+    }).populate('userId', 'fullName email phone kyc kycStatus status').sort('-createdAt');
 
     console.log('[v0] Admin fetched all deposits - Total:', deposits.length);
     res.json(deposits);

@@ -34,25 +34,14 @@ export default function AboutPage() {
           </div>
           <div className='space-y-4'>
             {/* Compliance badges */}
-            <div className='p-8 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 border border-border flex items-center justify-center'>
+            <div className='p-4 rounded-lg bg-card border border-border flex items-center justify-center'>
               <div className='text-center'>
                 <img 
                   src='https://hebbkx1anhila5yf.public.blob.vercel-storage.com/FCA%20UK%20REG-tpIiSMW9vGr4R1MXDho9irjldhw2ht.jpg'
                   alt='FCA UK Registration'
-                  className='w-full max-w-xs h-auto mx-auto rounded-lg shadow-lg'
+                  className='w-32 h-auto mx-auto rounded shadow'
                 />
-                <p className='text-xs sm:text-sm text-muted-foreground mt-3 font-semibold'>FCA Regulated Entity</p>
-              </div>
-            </div>
-            
-            <div className='p-8 rounded-xl bg-card border border-border flex items-center justify-center'>
-              <div className='text-center'>
-                <img 
-                  src='https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Certificate-of-Incorporation-scaled-xgx0Ga0uLk9p66iMTGFbWaMNrzThXf.jpg'
-                  alt='Certificate of Incorporation'
-                  className='w-full max-w-xs h-auto mx-auto rounded-lg shadow-lg'
-                />
-                <p className='text-xs sm:text-sm text-muted-foreground mt-3 font-semibold'>UK Incorporated Company</p>
+                <p className='text-xs text-muted-foreground mt-2 font-semibold'>FCA Regulated</p>
               </div>
             </div>
 

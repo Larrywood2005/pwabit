@@ -440,6 +440,15 @@ class ApiClient {
     }
   }
 
+  async rejectDeposit(transactionId: string, reason: string) {
+    try {
+      const response = await this.client.post(`/admin/reject-deposit/${transactionId}`, { reason });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   async getPendingKYC() {
     try {
       // Backend route is at /kyc/admin/pending (not /admin/kyc/pending)

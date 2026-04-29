@@ -412,20 +412,8 @@ export default function AdminDashboard() {
     try {
       setProcessingTransactions(prev => ({ ...prev, [transactionId]: true }));
       
-      // Call backend API to reject deposit
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/admin/reject-deposit/${transactionId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-        },
-        body: JSON.stringify({ reason }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to reject deposit');
-      }
+      // Call backend API to reject deposit using apiClient
+      await apiClient.rejectDeposit(transactionId, reason);
 
       setSuccessMessage('Deposit rejected successfully! User has been notified.');
       setTimeout(() => setSuccessMessage(''), 5000);
@@ -434,6 +422,7 @@ export default function AdminDashboard() {
       const depositsData = await apiClient.getPendingDeposits();
       setPendingDeposits(Array.isArray(depositsData) ? depositsData : []);
     } catch (err: any) {
+      console.error('[v0] Error rejecting deposit:', err);
       setError(err.message || 'Failed to reject deposit');
     } finally {
       setProcessingTransactions(prev => ({ ...prev, [transactionId]: false }));

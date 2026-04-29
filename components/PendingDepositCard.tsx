@@ -83,7 +83,7 @@ export function PendingDepositCard({ investment, onConfirm, onReject, isProcessi
               </div>
               <div>
                 <p className='text-xs font-semibold text-muted-foreground mb-1'>Phone</p>
-                <p className='text-sm text-foreground'>{investment.user?.phone || 'N/A'}</p>
+                <p className='text-sm text-foreground'>{investment.user?.phone || investment.phoneNumber || 'Not provided'}</p>
               </div>
               <div>
                 <p className='text-xs font-semibold text-muted-foreground mb-1'>Account Status</p>

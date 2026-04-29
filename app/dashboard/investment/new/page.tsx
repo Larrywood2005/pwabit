@@ -164,19 +164,14 @@ export default function NewInvestmentPage() {
       
       const investmentId = response.investment?._id || response.investmentId;
 
-      // Upload payment receipt as FormData
+      // Upload payment receipt using Blob storage
       if (investmentId && paymentReceipt) {
         const formData = new FormData();
         formData.append('file', paymentReceipt);
-        formData.append('investmentId', investmentId);
-        formData.append('receiptType', paymentReceipt.type.startsWith('image/') ? 'image' : 'pdf');
 
         try {
-          const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/investments/${investmentId}/upload-receipt`, {
+          const uploadResponse = await fetch('/api/upload', {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            },
             body: formData,
           });
 
@@ -184,7 +179,27 @@ export default function NewInvestmentPage() {
             console.warn('[v0] Receipt upload warning:', await uploadResponse.text());
             // Don't fail the investment if receipt upload fails
           } else {
-            console.log('[v0] Receipt uploaded successfully');
+            const uploadData = await uploadResponse.json();
+            const receiptUrl = uploadData.url;
+            
+            // Now save the receipt metadata to the investment
+            try {
+              await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/investments/${investmentId}/update-receipt`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                },
+                body: JSON.stringify({
+                  fileUrl: receiptUrl,
+                  fileName: paymentReceipt.name,
+                  receiptType: paymentReceipt.type.startsWith('image/') ? 'image' : 'pdf'
+                }),
+              });
+              console.log('[v0] Receipt metadata saved successfully');
+            } catch (metadataErr) {
+              console.warn('[v0] Failed to save receipt metadata:', metadataErr);
+            }
           }
         } catch (uploadErr) {
           console.warn('[v0] Receipt upload error:', uploadErr);

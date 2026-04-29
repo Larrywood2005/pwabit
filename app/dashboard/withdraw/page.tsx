@@ -832,6 +832,17 @@ function WithdrawalPageContent() {
                 Minimum: ${MIN_WITHDRAWAL} | Available: ${balance.toFixed(2)}
               </p>
 
+              {/* Warning: Insufficient Balance */}
+              {withdrawalData.amount > balance && withdrawalData.amount > 0 && (
+                <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/30 flex gap-2">
+                  <AlertTriangle size={18} className="text-red-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-red-700">
+                    <p className="font-semibold">Insufficient Balance</p>
+                    <p className="text-xs mt-1">You don&apos;t have enough funds to withdraw ${withdrawalData.amount.toFixed(2)}. Your available balance is only ${balance.toFixed(2)}.</p>
+                  </div>
+                </div>
+              )}
+
               {/* Withdrawal Fee Breakdown */}
               {withdrawalData.amount > 0 && (
                 <div className="mt-3 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 space-y-2">

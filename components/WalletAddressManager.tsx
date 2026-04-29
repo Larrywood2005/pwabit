@@ -188,7 +188,7 @@ export default function WalletAddressManager() {
               {wallets.map((wallet) => {
                 const logo = getCryptoLogo(wallet.walletType, wallet.usdtNetwork);
                 const displayName = wallet.walletType === 'usdt' && wallet.usdtNetwork 
-                  ? `${wallet.usdtNetwork.toUpperCase()}` 
+                  ? `USDT ${wallet.usdtNetwork.toUpperCase()}`
                   : wallet.walletType.toUpperCase();
                 
                 return (
@@ -211,7 +211,7 @@ export default function WalletAddressManager() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm">{wallet.walletType === 'usdt' && wallet.usdtNetwork ? `USDT (${displayName})` : displayName}</div>
+                          <div className="font-medium text-sm">{displayName}</div>
                           <div className="text-xs text-gray-600 mt-1 break-all">
                             <p className="font-mono">{wallet.walletAddress}</p>
                           </div>
