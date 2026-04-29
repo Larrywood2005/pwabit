@@ -14,12 +14,13 @@ interface WalletAddress {
   _id: string;
   walletAddress: string;
   walletType: 'bitcoin' | 'ethereum' | 'usdt' | 'usdc' | 'other';
+  usdtNetwork?: 'bep20' | 'erc20' | 'trc20' | 'morph';
   isDefault: boolean;
   status: string;
   addedAt: string;
 }
 
-const getCryptoLogo = (type: string) => {
+const getCryptoLogo = (type: string, network?: string) => {
   const logos: Record<string, { url: string; alt: string }> = {
     bitcoin: {
       url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/btc.jfif-2nHpiXE4h7XoZLLiqUMYeYRMOsoZ1r.jpeg',
@@ -33,6 +34,22 @@ const getCryptoLogo = (type: string) => {
       url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/USDT-i2kDVSUPCEi1vjtbfUjgNlHjefh00m.png',
       alt: 'USDT Logo'
     },
+    bep20: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/bep%2020%20ustd-kwhyuB3xrmP0ZUwMz3hK5ImywsKpy8.png',
+      alt: 'BEP20 Network'
+    },
+    erc20: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/erc20.jfif-QA4XeYJAgJDMBeIgGMQLeDpUtvADDF.jpeg',
+      alt: 'ERC20 Network'
+    },
+    trc20: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/trc20.jfif-VQxEJO97jy9bPLwryNHp5Y1gHvPUOD.jpeg',
+      alt: 'TRC20 Network'
+    },
+    morph: {
+      url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/morph%20ustd.jfif-bOMUcJLHHVLN47oguYSWvAmsx2XUcZ.jpeg',
+      alt: 'Morph Network'
+    },
     usdc: {
       url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/USDT-i2kDVSUPCEi1vjtbfUjgNlHjefh00m.png',
       alt: 'USDC Logo'
@@ -42,6 +59,10 @@ const getCryptoLogo = (type: string) => {
       alt: ''
     }
   };
+  // If USDT and network specified, use network logo
+  if (type === 'usdt' && network) {
+    return logos[network] || logos.usdt;
+  }
   return logos[type] || logos.other;
 };
 
@@ -55,6 +76,7 @@ export default function WalletAddressManager() {
   // Crypto wallet form
   const [cryptoWallet, setCryptoWallet] = useState('');
   const [cryptoType, setCryptoType] = useState('bitcoin');
+  const [usdtNetwork, setUsdtNetwork] = useState('bep20');
 
   useEffect(() => {
     fetchWallets();
@@ -83,14 +105,22 @@ export default function WalletAddressManager() {
         return;
       }
       
-      await apiClient.addWalletAddress({
+      const walletData: any = {
         walletAddress: cryptoWallet,
         walletType: cryptoType
-      });
+      };
+      
+      // Add USDT network if USDT is selected
+      if (cryptoType === 'usdt') {
+        walletData.usdtNetwork = usdtNetwork;
+      }
+      
+      await apiClient.addWalletAddress(walletData);
 
       setError('');
       setCryptoWallet('');
       setCryptoType('bitcoin');
+      setUsdtNetwork('bep20');
       setShowForm(false);
       await fetchWallets();
     } catch (err: any) {
@@ -156,7 +186,11 @@ export default function WalletAddressManager() {
           ) : (
             <div className="space-y-3">
               {wallets.map((wallet) => {
-                const logo = getCryptoLogo(wallet.walletType);
+                const logo = getCryptoLogo(wallet.walletType, wallet.usdtNetwork);
+                const displayName = wallet.walletType === 'usdt' && wallet.usdtNetwork 
+                  ? `${wallet.usdtNetwork.toUpperCase()}` 
+                  : wallet.walletType.toUpperCase();
+                
                 return (
                   <div
                     key={wallet._id}
@@ -177,7 +211,7 @@ export default function WalletAddressManager() {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm">{wallet.walletType.toUpperCase()}</div>
+                          <div className="font-medium text-sm">{wallet.walletType === 'usdt' && wallet.usdtNetwork ? `USDT (${displayName})` : displayName}</div>
                           <div className="text-xs text-gray-600 mt-1 break-all">
                             <p className="font-mono">{wallet.walletAddress}</p>
                           </div>
@@ -241,16 +275,6 @@ export default function WalletAddressManager() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Wallet Address</label>
-              <Input
-                placeholder="Enter wallet address"
-                value={cryptoWallet}
-                onChange={(e) => setCryptoWallet(e.target.value)}
-              />
-            </div>
-
-            <div className="flex gap-2 pt-4">
               <Button onClick={handleAddWallet} className="flex-1">
                 Add Wallet
               </Button>

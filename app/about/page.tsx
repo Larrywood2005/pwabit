@@ -23,29 +23,47 @@ export default function AboutPage() {
           <div>
             <h2 className='text-3xl font-bold text-foreground mb-4'>Our Mission</h2>
             <p className='text-muted-foreground mb-4'>
-              At Powabitz, we believe everyone should have access to profitable crypto investment opportunities. 
-              Our mission is to provide a transparent, secure, and user-friendly platform where investors of all 
-              levels can grow their wealth through daily compound returns.
+              Powabitz is a UK-regulated financial technology platform dedicated to democratizing access to sophisticated crypto investment opportunities. Operating under FCA supervision and incorporated as a private limited company in England and Wales, we provide institutional-grade trading infrastructure to retail investors worldwide.
             </p>
             <p className='text-muted-foreground mb-4'>
-              We leverage blockchain technology and advanced security protocols to ensure every transaction is 
-              verified and transparent. Our commitment to security and customer satisfaction is unwavering.
+              Our mission is to deliver transparent, secure, and compliant investment solutions through blockchain technology and advanced security protocols. We maintain rigorous compliance standards including full KYC verification, AML procedures, and regular security audits to ensure every transaction is verified, transparent, and protected.
             </p>
             <p className='text-muted-foreground'>
-              Founded in 2024, Powabitz has grown to serve over 10,000 active investors worldwide, managing 
-              more than $50 million in investments.
+              Since our establishment in 2024, Powabitz has grown to serve over 10,000 active investors globally, managing more than $50 million in investments. We are committed to fostering trust through regulatory compliance, operational excellence, and unwavering dedication to investor protection.
             </p>
           </div>
-          <div className='p-12 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 border border-border'>
-            <div className='text-center'>
-              <div className='text-5xl font-bold text-primary mb-2'>10K+</div>
-              <p className='text-muted-foreground mb-8'>Active Investors</p>
-              
-              <div className='text-5xl font-bold text-secondary mb-2'>$50M+</div>
-              <p className='text-muted-foreground mb-8'>Total Invested</p>
-              
-              <div className='text-5xl font-bold text-accent mb-2'>10%</div>
-              <p className='text-muted-foreground'>Daily Returns</p>
+          <div className='space-y-4'>
+            {/* Compliance badges */}
+            <div className='p-8 rounded-xl bg-gradient-to-br from-primary/20 to-secondary/20 border border-border flex items-center justify-center'>
+              <div className='text-center'>
+                <img 
+                  src='https://hebbkx1anhila5yf.public.blob.vercel-storage.com/FCA%20UK%20REG-tpIiSMW9vGr4R1MXDho9irjldhw2ht.jpg'
+                  alt='FCA UK Registration'
+                  className='w-full max-w-xs h-auto mx-auto rounded-lg shadow-lg'
+                />
+                <p className='text-xs sm:text-sm text-muted-foreground mt-3 font-semibold'>FCA Regulated Entity</p>
+              </div>
+            </div>
+            
+            <div className='p-8 rounded-xl bg-card border border-border flex items-center justify-center'>
+              <div className='text-center'>
+                <img 
+                  src='https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Certificate-of-Incorporation-scaled-xgx0Ga0uLk9p66iMTGFbWaMNrzThXf.jpg'
+                  alt='Certificate of Incorporation'
+                  className='w-full max-w-xs h-auto mx-auto rounded-lg shadow-lg'
+                />
+                <p className='text-xs sm:text-sm text-muted-foreground mt-3 font-semibold'>UK Incorporated Company</p>
+              </div>
+            </div>
+
+            <div className='p-6 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900'>
+              <p className='text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2'>Regulatory Status</p>
+              <ul className='text-xs sm:text-sm text-blue-800 dark:text-blue-200 space-y-1'>
+                <li>✓ FCA Supervised Entity</li>
+                <li>✓ UK Companies House Registration</li>
+                <li>✓ Full KYC/AML Compliant</li>
+                <li>✓ Regular Security Audits</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -110,28 +128,40 @@ export default function AboutPage() {
         <div className='p-12 rounded-xl border border-border bg-card/50'>
           <h2 className='text-2xl font-bold text-foreground mb-4'>Compliance & Security</h2>
           <p className='text-muted-foreground mb-6'>
-            Powabitz operates with the highest standards of compliance and security. We are committed to:
+            As an FCA-regulated entity incorporated in the United Kingdom, Powabitz operates with the highest standards of compliance and security. Our regulatory framework ensures investor protection and operational transparency at every level.
           </p>
           <ul className='space-y-3 text-muted-foreground'>
             <li className='flex items-start gap-3'>
               <span className='text-primary mt-1'>✓</span>
-              Full KYC (Know Your Customer) verification for users
+              <span><strong>FCA Supervision:</strong> Operating under Financial Conduct Authority oversight as a UK-regulated financial services entity</span>
             </li>
             <li className='flex items-start gap-3'>
               <span className='text-primary mt-1'>✓</span>
-              AML (Anti-Money Laundering) compliance
+              <span><strong>UK Incorporation:</strong> Registered as a Private Limited Company with Companies House under UK jurisdiction</span>
             </li>
             <li className='flex items-start gap-3'>
               <span className='text-primary mt-1'>✓</span>
-              Regular security audits and penetration testing
+              Full KYC (Know Your Customer) verification and ongoing customer due diligence
             </li>
             <li className='flex items-start gap-3'>
               <span className='text-primary mt-1'>✓</span>
-              Cold storage for the majority of user funds
+              AML (Anti-Money Laundering) compliance and transaction monitoring
             </li>
             <li className='flex items-start gap-3'>
               <span className='text-primary mt-1'>✓</span>
-              24/7 monitoring and fraud detection
+              Regular security audits, penetration testing, and vulnerability assessments
+            </li>
+            <li className='flex items-start gap-3'>
+              <span className='text-primary mt-1'>✓</span>
+              Cold storage for the majority of user funds with multi-signature security
+            </li>
+            <li className='flex items-start gap-3'>
+              <span className='text-primary mt-1'>✓</span>
+              24/7 monitoring, fraud detection, and incident response protocols
+            </li>
+            <li className='flex items-start gap-3'>
+              <span className='text-primary mt-1'>✓</span>
+              Quarterly compliance reporting and regulatory filings
             </li>
           </ul>
         </div>
