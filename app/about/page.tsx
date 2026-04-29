@@ -93,7 +93,7 @@ export default function AboutPage() {
               alt='CEO & Founder'
               className='w-24 h-24 rounded-full object-cover mx-auto mb-4 ring-2 ring-primary'
             />
-            <h3 className='font-bold text-foreground mb-1 text-lg'>Mark Johnson</h3>
+            <h3 className='font-bold text-foreground mb-1 text-lg'>Larry M. Wood</h3>
             <p className='text-primary text-sm font-semibold mb-2'>CEO & Founder</p>
             <p className='text-muted-foreground text-sm'>Crypto investor with 10+ years experience in blockchain technology and digital finance.</p>
           </div>
