@@ -14,6 +14,14 @@ import { GrantUSDModal } from '@/components/GrantUSDModal';
 import { AdminChatMessagesModal } from '@/components/AdminChatMessagesModal';
 import { io } from 'socket.io-client';
 
+// Helper function to display wallet type with network
+const getWalletDisplayName = (walletType: string, usdtNetwork?: string) => {
+  if (walletType === 'usdt' && usdtNetwork) {
+    return `USDT ${usdtNetwork.toUpperCase()}`;
+  }
+  return walletType.toUpperCase();
+};
+
 interface AdminStats {
   totalUsers?: number;
   totalInvested?: number | string;
@@ -1069,6 +1077,19 @@ export default function AdminDashboard() {
                         const userWallets = userWalletAddresses.filter(
                           (w: any) => w.userId?._id === withdrawal.userId?._id || w.userId === withdrawal.userId?._id
                         );
+                        
+                        // Find matching wallet by type and network to display correct info to admin
+                        const matchingWallet = userWallets.find((w: any) => 
+                          w.walletType === withdrawal.walletType && 
+                          (w.usdtNetwork === withdrawal.usdtNetwork || !withdrawal.usdtNetwork)
+                        ) || userWallets[0];
+                        
+                        const displayWalletType = matchingWallet 
+                          ? getWalletDisplayName(matchingWallet.walletType, matchingWallet.usdtNetwork)
+                          : (withdrawal.usdtNetwork 
+                              ? getWalletDisplayName(withdrawal.walletType, withdrawal.usdtNetwork)
+                              : withdrawal.walletType?.toUpperCase() || 'N/A');
+                        
                         return (
                           <div key={withdrawal._id} className='p-4 md:p-6 hover:bg-muted/50 transition-colors'>
                             <div className='grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-3 md:mb-4'>
@@ -1082,8 +1103,8 @@ export default function AdminDashboard() {
                                 <p className='font-bold text-base md:text-lg text-foreground'>${withdrawal.amount?.toFixed(2)}</p>
                               </div>
                               <div>
-                                <p className='text-[10px] md:text-xs text-muted-foreground mb-1'>Wallet Type</p>
-                                <p className='font-semibold text-foreground text-sm uppercase'>{withdrawal.walletType || 'N/A'}</p>
+                                <p className='text-[10px] md:text-xs text-muted-foreground mb-1'>Wallet Type & Network</p>
+                                <p className='font-semibold text-foreground text-sm uppercase'>{displayWalletType}</p>
                               </div>
                               <div className='col-span-2 md:col-span-1'>
                                 <p className='text-[10px] md:text-xs text-muted-foreground mb-1'>Wallet Address</p>
@@ -1098,7 +1119,7 @@ export default function AdminDashboard() {
                                 <div className='space-y-1'>
                                   {userWallets.map((wallet: any) => (
                                     <div key={wallet._id} className='flex items-center gap-2 text-[10px] md:text-xs'>
-                                      <span className='px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-600 font-semibold uppercase'>{wallet.walletType}</span>
+                                      <span className='px-1.5 py-0.5 bg-blue-500/20 rounded text-blue-600 font-semibold uppercase'>{getWalletDisplayName(wallet.walletType, wallet.usdtNetwork)}</span>
                                       <span className='font-mono text-foreground break-all'>{wallet.walletAddress}</span>
                                       {wallet.isDefault && <span className='px-1.5 py-0.5 bg-green-500/20 rounded text-green-600 text-[9px]'>Default</span>}
                                     </div>
@@ -1158,7 +1179,7 @@ export default function AdminDashboard() {
                               </div>
                               <p className='text-xs text-muted-foreground mb-2'>{wallet.userId?.email}</p>
                               <div className='flex items-center gap-2'>
-                                <span className='px-2 py-1 bg-purple-500/20 text-purple-600 rounded text-xs font-semibold uppercase'>{wallet.walletType}</span>
+                                <span className='px-2 py-1 bg-purple-500/20 text-purple-600 rounded text-xs font-semibold uppercase'>{getWalletDisplayName(wallet.walletType, wallet.usdtNetwork)}</span>
                                 <span className='font-mono text-xs text-foreground break-all bg-muted/50 px-2 py-1 rounded'>{wallet.walletAddress}</span>
                               </div>
                             </div>

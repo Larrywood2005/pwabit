@@ -52,6 +52,7 @@ const transactionSchema = new mongoose.Schema({
   walletAddress: String,
   walletType: String, // BTC, ETH, USDT, etc.
   walletNetwork: String, // Mainnet, Testnet, Polygon, Arbitrum, etc.
+  usdtNetwork: String, // USDT specific networks: bep20, erc20, trc20, morph
   transactionHash: String, // Blockchain tx hash
   networkFee: Number,
   

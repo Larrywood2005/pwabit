@@ -17,6 +17,11 @@ const walletAddressSchema = new mongoose.Schema({
     enum: ['bitcoin', 'ethereum', 'usdt', 'usdc', 'other'],
     required: true
   },
+  usdtNetwork: {
+    type: String,
+    enum: ['bep20', 'erc20', 'trc20', 'morph'],
+    default: null
+  },
   isVerified: {
     type: Boolean,
     default: false

@@ -433,6 +433,7 @@ router.post('/withdrawal', authenticate, async (req, res) => {
     // Get wallet address details (outside transaction - read-only)
     let walletAddress = '';
     let walletType = 'crypto';
+    let usdtNetwork = null;
 
     if (walletId) {
       try {
@@ -441,6 +442,7 @@ router.post('/withdrawal', authenticate, async (req, res) => {
         if (wallet) {
           walletAddress = wallet.walletAddress;
           walletType = wallet.walletType;
+          usdtNetwork = wallet.usdtNetwork || null;
         }
       } catch (walletError) {
         console.warn('[v0] Withdrawal - Could not fetch wallet address details:', {
@@ -540,6 +542,7 @@ router.post('/withdrawal', authenticate, async (req, res) => {
         currency: currency || 'USD',
         walletAddress: walletAddress || '',
         walletType: walletType || 'crypto',
+        usdtNetwork: usdtNetwork,
         walletNetwork: walletNetwork || 'Not specified',
         method: method || 'crypto',
         status: 'pending',
@@ -624,6 +627,7 @@ router.post('/withdrawal', authenticate, async (req, res) => {
           currency: transaction.currency,
           walletAddress: transaction.walletAddress,
           walletType: transaction.walletType,
+          usdtNetwork: transaction.usdtNetwork,
           walletNetwork: transaction.walletNetwork,
           status: 'pending',
           withdrawalStatus: 'pending',

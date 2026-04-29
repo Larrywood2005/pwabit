@@ -37,7 +37,7 @@ router.get('/', authenticate, async (req, res) => {
 // Add wallet address (POST to root endpoint)
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { walletAddress, walletType } = req.body;
+    const { walletAddress, walletType, usdtNetwork } = req.body;
     const userId = req.user.userId || req.user._id || req.user.id;
 
     // Crypto wallet validation
@@ -67,6 +67,7 @@ router.post('/', authenticate, async (req, res) => {
       userId,
       walletAddress: walletAddress.toLowerCase(),
       walletType,
+      usdtNetwork: walletType === 'usdt' ? (usdtNetwork || 'bep20') : null,
       isDefault
     });
 
@@ -79,6 +80,7 @@ router.post('/', authenticate, async (req, res) => {
         _id: wallet._id,
         walletAddress: wallet.walletAddress,
         walletType: wallet.walletType,
+        usdtNetwork: wallet.usdtNetwork,
         isDefault: wallet.isDefault,
         addedAt: wallet.addedAt
       });
@@ -91,6 +93,7 @@ router.post('/', authenticate, async (req, res) => {
         _id: wallet._id,
         walletAddress: wallet.walletAddress,
         walletType: wallet.walletType,
+        usdtNetwork: wallet.usdtNetwork,
         isDefault: wallet.isDefault,
         addedAt: wallet.addedAt
       }
