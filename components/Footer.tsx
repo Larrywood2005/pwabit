@@ -68,7 +68,7 @@ export default function Footer() {
           <div className='flex flex-col gap-4'>
             <h3 className='font-semibold text-foreground'>Follow Us</h3>
             <div className='flex items-center gap-4'>
-              <a href='https://t.co/z18MOU0JYF' target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors'>
+              <a href='https://x.com/pwabitzgit' target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors'>
                 <Twitter size={20} />
               </a>
               <a href='https://t.me/+-6a0vxmmxtk4ZjFk' target='_blank' rel='noopener noreferrer' className='p-2 rounded-lg bg-muted hover:bg-primary hover:text-primary-foreground transition-colors'>
