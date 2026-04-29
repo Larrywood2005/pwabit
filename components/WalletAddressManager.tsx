@@ -275,6 +275,35 @@ export default function WalletAddressManager() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* USDT Network Selection - Only show if USDT is selected */}
+            {cryptoType === 'usdt' && (
+              <div>
+                <label className="block text-sm font-medium mb-2">USDT Network</label>
+                <Select value={usdtNetwork} onValueChange={setUsdtNetwork}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bep20">BEP20 (Binance Smart Chain)</SelectItem>
+                    <SelectItem value="erc20">ERC20 (Ethereum)</SelectItem>
+                    <SelectItem value="trc20">TRC20 (TRON)</SelectItem>
+                    <SelectItem value="morph">Morph USDT</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">Wallet Address</label>
+              <Input
+                placeholder="Enter wallet address"
+                value={cryptoWallet}
+                onChange={(e) => setCryptoWallet(e.target.value)}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
               <Button onClick={handleAddWallet} className="flex-1">
                 Add Wallet
               </Button>
