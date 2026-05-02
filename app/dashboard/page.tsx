@@ -19,6 +19,7 @@ import { use24HourRefresh } from '@/hooks/use24HourRefresh';
 import EnhancedTradeModal from '@/components/EnhancedTradeModal';
 import LiveTradingInterface from '@/components/LiveTradingInterface';
 import { GiveawayModal } from '@/components/GiveawayModal';
+import SuccessRewardModal from '@/components/SuccessRewardModal';
 
 interface UserStats {
   totalInvested?: number;
@@ -46,6 +47,8 @@ export default function DashboardPage() {
   const [powaUpAmount, setPowaUpAmount] = useState(10);
   const [powaUpLoading, setPowaUpLoading] = useState(false);
   const [showGiveawayModal, setShowGiveawayModal] = useState(false);
+  const [showBonusModal, setShowBonusModal] = useState(false);
+  const [bonusAmount, setBonusAmount] = useState(0);
 
   // Auto-complete trades after 24 hours
   useAutoCompleteTradesDaily(investments);
@@ -544,8 +547,8 @@ export default function DashboardPage() {
                     try {
                       const reward = await apiClient.claimDailyLoginReward();
                       const earnedAmount = reward?.reward?.amount || reward?.amount || 0.03;
-                      setSuccessMessage(`You earned $${earnedAmount.toFixed(2)} from daily login!`);
-                      setTimeout(() => setSuccessMessage(''), 5000);
+                      setBonusAmount(earnedAmount);
+                      setShowBonusModal(true);
                       setBalance(prev => prev + earnedAmount);
                     } catch (err: any) {
                       const errorMsg = err instanceof Error ? err.message : (err?.message || 'You have already claimed today');
@@ -614,6 +617,14 @@ export default function DashboardPage() {
           setSelectedInvestment(investment);
           setTradeModalOpen(true);
         }}
+      />
+
+      {/* Daily Bonus Success Modal */}
+      <SuccessRewardModal
+        isOpen={showBonusModal}
+        amount={bonusAmount}
+        rewardType="bonus"
+        onClose={() => setShowBonusModal(false)}
       />
     </ProtectedRoute>
   );

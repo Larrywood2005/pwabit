@@ -80,21 +80,34 @@ export default function WalletPage() {
       // Fetch wallet transactions - FIXED: Always get latest 6, combined from all types
       try {
         const txData = await apiClient.getWalletTransactions(1, 6);
-        if (txData && txData.data && Array.isArray(txData.data)) {
-          // Sort by date descending (latest first)
-          const sorted = txData.data.sort((a: any, b: any) => 
-            new Date(b.date || b.createdAt || b.timestamp).getTime() - 
-            new Date(a.date || a.createdAt || a.timestamp).getTime()
-          );
-          // Limit to 6 latest
-          setTransactions(sorted.slice(0, 6));
-        } else if (Array.isArray(txData)) {
-          const sorted = txData.sort((a: any, b: any) => 
-            new Date(b.date || b.createdAt || b.timestamp).getTime() - 
-            new Date(a.date || a.createdAt || a.timestamp).getTime()
-          );
-          setTransactions(sorted.slice(0, 6));
+        console.log('[v0] Raw transaction data received:', txData);
+        
+        if (txData && typeof txData === 'object') {
+          let transactionsArray = Array.isArray(txData) ? txData : (txData.data && Array.isArray(txData.data)) ? txData.data : [];
+          
+          if (transactionsArray.length === 0) {
+            // Try alternative data structure
+            transactionsArray = txData.transactions || txData.history || [];
+          }
+          
+          console.log('[v0] Transactions array:', transactionsArray);
+          
+          if (transactionsArray.length > 0) {
+            // Sort by date descending (latest first)
+            const sorted = transactionsArray.sort((a: any, b: any) => {
+              const dateA = new Date(b.date || b.createdAt || b.timestamp || Date.now()).getTime();
+              const dateB = new Date(a.date || a.createdAt || a.timestamp || Date.now()).getTime();
+              return dateA - dateB;
+            });
+            // Limit to 6 latest
+            setTransactions(sorted.slice(0, 6));
+            console.log('[v0] Set transactions:', sorted.slice(0, 6));
+          } else {
+            console.log('[v0] No transactions found, setting empty array');
+            setTransactions([]);
+          }
         } else {
+          console.log('[v0] Invalid transaction data format:', txData);
           setTransactions([]);
         }
       } catch (txErr) {

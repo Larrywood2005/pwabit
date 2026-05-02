@@ -15,6 +15,13 @@ export function PendingDepositCard({ investment, onConfirm, onReject, isProcessi
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 
+  // Get user data - handle both investment.user and investment.userId
+  const userData = investment.user || investment.userId || {};
+  const userName = userData?.fullName || userData?.name || 'Unknown User';
+  const userEmail = userData?.email || '';
+  const userPhone = userData?.phone || investment.phoneNumber || 'Not provided';
+  const userStatus = userData?.status || 'unknown';
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -39,8 +46,8 @@ export function PendingDepositCard({ investment, onConfirm, onReject, isProcessi
           <div className='flex-1 text-left'>
             <div className='flex items-center gap-3'>
               <div>
-                <h3 className='font-semibold text-foreground'>{investment.user?.fullName || 'Unknown User'}</h3>
-                <p className='text-sm text-muted-foreground'>{investment.user?.email}</p>
+                <h3 className='font-semibold text-foreground'>{userName}</h3>
+                <p className='text-sm text-muted-foreground'>{userEmail}</p>
               </div>
             </div>
             <div className='mt-2 flex items-center gap-4'>
@@ -75,20 +82,20 @@ export function PendingDepositCard({ investment, onConfirm, onReject, isProcessi
             <div className='grid grid-cols-2 gap-4'>
               <div>
                 <p className='text-xs font-semibold text-muted-foreground mb-1'>Full Name</p>
-                <p className='text-sm text-foreground'>{investment.user?.fullName}</p>
+                <p className='text-sm text-foreground'>{userName}</p>
               </div>
               <div>
                 <p className='text-xs font-semibold text-muted-foreground mb-1'>Email</p>
-                <p className='text-sm text-foreground break-all'>{investment.user?.email}</p>
+                <p className='text-sm text-foreground break-all'>{userEmail}</p>
               </div>
               <div>
                 <p className='text-xs font-semibold text-muted-foreground mb-1'>Phone</p>
-                <p className='text-sm text-foreground'>{investment.user?.phone || investment.phoneNumber || 'Not provided'}</p>
+                <p className='text-sm text-foreground'>{userPhone}</p>
               </div>
               <div>
                 <p className='text-xs font-semibold text-muted-foreground mb-1'>Account Status</p>
-                <p className={`text-sm font-semibold ${investment.user?.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>
-                  {investment.user?.status?.toUpperCase()}
+                <p className={`text-sm font-semibold ${userStatus === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+                  {userStatus?.toUpperCase()}
                 </p>
               </div>
             </div>
@@ -181,9 +188,9 @@ export function PendingDepositCard({ investment, onConfirm, onReject, isProcessi
       {/* Receipt Modal */}
       {showReceiptModal && investment.paymentReceipt?.fileUrl && (
         <div className='fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4'>
-          <div className='bg-card border border-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto'>
+            <div className='bg-card border border-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto'>
             <div className='flex items-center justify-between p-4 border-b border-border sticky top-0 bg-card'>
-              <h3 className='font-bold text-foreground'>Payment Receipt - {investment.user?.fullName}</h3>
+              <h3 className='font-bold text-foreground'>Payment Receipt - {userName}</h3>
               <button
                 onClick={() => setShowReceiptModal(false)}
                 className='text-muted-foreground hover:text-foreground transition-colors'
