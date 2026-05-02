@@ -6,6 +6,12 @@ import transactionLogger from '../services/transactionLogger.js';
 
 const router = express.Router();
 
+// Set Socket.io instance for real-time emissions
+export const setSocketIO = (io) => {
+  router.io = io;
+  console.log('[Games Route] Socket.io instance set for real-time event emissions');
+};
+
 // Claim daily login reward
 router.post('/claim-daily-login', authenticate, async (req, res) => {
   try {
@@ -92,6 +98,17 @@ router.post('/claim-daily-login', authenticate, async (req, res) => {
       description: 'Daily login bonus ($0.03)',
       rewardId: reward._id
     });
+
+    // Emit Socket.io event for real-time transaction update
+    if (router.io) {
+      router.io.to(`user_${userId}`).emit('bonus-claimed', {
+        id: reward._id,
+        amount: rewardAmount,
+        type: 'daily-login',
+        timestamp: now
+      });
+      console.log(`[Socket.io] Bonus claimed event emitted for user: ${userId}`);
+    }
 
     res.json({
       message: 'Daily login reward claimed successfully! Come back in 24 hours.',
@@ -226,6 +243,17 @@ router.post('/claim-puzzle-win', authenticate, async (req, res) => {
       description: 'Puzzle game reward ($0.03)',
       rewardId: reward._id
     });
+
+    // Emit Socket.io event for real-time transaction update
+    if (router.io) {
+      router.io.to(`user_${userId}`).emit('game-reward-claimed', {
+        id: reward._id,
+        amount: rewardAmount,
+        type: 'puzzle-win',
+        timestamp: now
+      });
+      console.log(`[Socket.io] Game reward claimed event emitted for user: ${userId}`);
+    }
 
     res.json({
       message: 'Puzzle reward claimed successfully! You can play again in 24 hours.',

@@ -201,7 +201,7 @@ import adminRoutes, { setSocketIO as setAdminSocketIO } from './routes/admin.js'
 import activityRoutes from './routes/activities.js';
 import walletRoutes, { setSocketIO as setWalletSocketIO } from './routes/wallets.js';
 import kycRoutes from './routes/kyc.js';
-import gameRoutes from './routes/games.js';
+import gameRoutes, { setSocketIO as setGameSocketIO } from './routes/games.js';
 import walletAddressRoutes, { setSocketIO as setWalletAddressSocketIO } from './routes/wallet-addresses.js';
 import powaupRoutes from './routes/powaup.js';
 import giveawayRoutes from './routes/giveaway.js';
@@ -210,6 +210,7 @@ import giveawayRoutes from './routes/giveaway.js';
 setWalletSocketIO(io);
 setAdminSocketIO(io);
 setWalletAddressSocketIO(io);
+setGameSocketIO(io);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Zap, Lightbulb } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import SuccessRewardModal from '@/components/SuccessRewardModal';
 
 interface PuzzleGameProps {
   onRewardClaimed?: (amount: number) => void;
@@ -108,7 +109,9 @@ export default function PuzzleGame({ onRewardClaimed }: PuzzleGameProps) {
   const [loading, setLoading] = useState(false);
   const [canClaim, setCanClaim] = useState(true);
   const [claimLoading, setClaimLoading] = useState(false);
-  const [puzzles, setPuzzles] = useState<Puzzle[]>([]); // FIXED: Store puzzles in state
+  const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [rewardAmount, setRewardAmount] = useState(0);
 
   useEffect(() => {
     checkClaimEligibility();
@@ -159,12 +162,12 @@ export default function PuzzleGame({ onRewardClaimed }: PuzzleGameProps) {
       console.log('[v0] Starting claim reward request...');
       const reward = await apiClient.claimPuzzleWinReward();
       console.log('[v0] Reward claimed successfully:', reward);
-      toast({
-        title: 'Success',
-        description: `You earned $${reward?.reward?.amount || reward?.amount || 0.03}! This has been added to your account.`,
-        variant: 'default'
-      });
-      onRewardClaimed?.(reward?.reward?.amount || reward?.amount || 0.03);
+      
+      const amount = reward?.reward?.amount || reward?.amount || 0.03;
+      setRewardAmount(amount);
+      setShowSuccessModal(true);
+      
+      onRewardClaimed?.(amount);
       setCanClaim(false);
       setGameActive(false);
       setCurrentPuzzleIndex(0);
@@ -353,6 +356,13 @@ export default function PuzzleGame({ onRewardClaimed }: PuzzleGameProps) {
           </Button>
         </>
       )}
+
+      <SuccessRewardModal
+        isOpen={showSuccessModal}
+        amount={rewardAmount}
+        rewardType="puzzle"
+        onClose={() => setShowSuccessModal(false)}
+      />
     </Card>
   );
 }

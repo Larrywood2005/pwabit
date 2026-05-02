@@ -193,6 +193,35 @@ export default function WalletPage() {
           }
         });
 
+        // Listen for game rewards/bonuses
+        socketRef.current.on('game-reward-claimed', (data: any) => {
+          if (mounted) {
+            const newTx: Transaction = {
+              id: data.id || `tx-${Date.now()}`,
+              type: 'purchase',
+              amount: data.amount,
+              currency: 'USD',
+              date: new Date().toISOString(),
+              status: 'completed'
+            };
+            setTransactions(prev => [newTx, ...prev.slice(0, 5)]);
+          }
+        });
+
+        socketRef.current.on('bonus-claimed', (data: any) => {
+          if (mounted) {
+            const newTx: Transaction = {
+              id: data.id || `tx-${Date.now()}`,
+              type: 'deposit',
+              amount: data.amount,
+              currency: 'USD',
+              date: new Date().toISOString(),
+              status: 'completed'
+            };
+            setTransactions(prev => [newTx, ...prev.slice(0, 5)]);
+          }
+        });
+
       } catch (err) {
         console.error('[v0] Socket connection error:', err);
       }
