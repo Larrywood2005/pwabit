@@ -154,30 +154,43 @@ router.get('/transactions', authenticate, async (req, res) => {
     const wallet = await Wallet.findOne({ userId: req.user.userId });
     
     if (!wallet) {
+      console.log('[v0] No wallet found for user:', req.user.userId);
       return res.json({
         data: [],
         pagination: { page, limit, total: 0 }
       });
     }
     
-    // Combine pending deposits and withdrawal history
+    console.log('[v0] Wallet found. Pending deposits:', wallet.pendingDeposits.length, 'Withdrawals:', wallet.withdrawalHistory.length);
+    
+    // Combine pending deposits and withdrawal history with CONSISTENT date field
     const allTransactions = [
       ...wallet.pendingDeposits.map(tx => ({ 
+        id: tx._id || tx.transactionHash || `deposit-${Date.now()}`,
         type: 'deposit',
-        currency: tx.currency,
-        amount: tx.amount,
+        currency: tx.currency || 'USD',
+        amount: tx.amount || 0,
         status: 'pending',
         transactionHash: tx.transactionHash,
+        date: tx.createdAt || new Date(),  // Use consistent 'date' field
         timestamp: tx.createdAt || new Date()
       })),
       ...wallet.withdrawalHistory.map(tx => ({ 
+        id: tx._id || tx.transactionHash || `withdrawal-${Date.now()}`,
         ...tx.toObject(),
-        type: 'withdrawal'
+        type: 'withdrawal',
+        date: tx.timestamp || tx.createdAt || new Date(),  // Use consistent 'date' field
       }))
-    ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    ].sort((a, b) => {
+      const dateA = new Date(b.date || b.timestamp || 0).getTime();
+      const dateB = new Date(a.date || a.timestamp || 0).getTime();
+      return dateA - dateB;
+    });
     
     const total = allTransactions.length;
     const transactions = allTransactions.slice(skip, skip + limit);
+    
+    console.log('[v0] Returning', transactions.length, 'transactions for page', page, 'total:', total);
     
     res.json({
       data: transactions,
@@ -189,6 +202,7 @@ router.get('/transactions', authenticate, async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('[v0] Error fetching transactions:', error);
     res.status(500).json({ message: 'Failed to fetch transactions', error: error.message });
   }
 });

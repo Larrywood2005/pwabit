@@ -24,23 +24,23 @@ interface WalletNetwork {
 }
 
 interface WalletInfo {
-  usdtErc20?: WalletNetwork;
-  ethereum?: WalletNetwork;
+  usdtBep20?: WalletNetwork;
+  ustdERC20?: WalletNetwork;
   sol?: WalletNetwork;
 }
 
 const DEPOSIT_WALLETS: WalletInfo = {
-  usdtErc20: {
-    network: 'USDT ERC20',
-    address: '0x36D75f7d70689701194F2BBdc3A930d35169c2c7'
+  usdtBep20: {
+    network: 'USDT BEP20(Binance Smart Chain)',
+    address: '0x1f4a8ee948707200ffe3ea715617887b2908b750'
   },
-  ethereum: {
-    network: 'Ethereum',
-    address: '0x36D75f7d70689701194F2BBdc3A930d35169c2c7'
+  ustdERC20: {
+    network: 'ERC20 (Ethereum)',
+    address: '0x1f4a8ee948707200ffe3ea715617887b2908b750'
   },
   sol: {
     network: 'SOL',
-    address: '9uuMDTrNUHcs4GryAZfQJ3xFL6BYwKBmeUXoyH2sLNGw'
+    address: 'Ffq5xhXS4wqeqbJQ8JVyK7zro6usMQXVe1KerBeA1jQ1'
   }
 };
 
@@ -544,10 +544,10 @@ export default function NewInvestmentPage() {
                 <p className='text-sm text-muted-foreground mb-2'>Network: USDT ERC20</p>
                 <div className='flex items-center gap-2'>
                   <code className='flex-1 p-2 rounded bg-background text-xs font-mono break-all text-foreground'>
-                    {DEPOSIT_WALLETS.usdtErc20?.address}
+                    {DEPOSIT_WALLETS.usdtBep20?.address}
                   </code>
                   <button
-                    onClick={() => copyToClipboard(DEPOSIT_WALLETS.usdtErc20?.address || '', 'usdt')}
+                    onClick={() => copyToClipboard(DEPOSIT_WALLETS.usdtBep20?.address || '', 'usdt')}
                     className='px-3 py-2 rounded hover:bg-background transition-colors text-muted-foreground hover:text-foreground'
                   >
                     {copied === 'usdt' ? '✓' : 'Copy'}
@@ -559,10 +559,10 @@ export default function NewInvestmentPage() {
                 <p className='text-sm text-muted-foreground mb-2'>Network: Ethereum</p>
                 <div className='flex items-center gap-2'>
                   <code className='flex-1 p-2 rounded bg-background text-xs font-mono break-all text-foreground'>
-                    {DEPOSIT_WALLETS.ethereum?.address}
+                    {DEPOSIT_WALLETS.ustdERC20?.address}
                   </code>
                   <button
-                    onClick={() => copyToClipboard(DEPOSIT_WALLETS.ethereum?.address || '', 'eth')}
+                    onClick={() => copyToClipboard(DEPOSIT_WALLETS.ustdERC20?.address || '', 'eth')}
                     className='px-3 py-2 rounded hover:bg-background transition-colors text-muted-foreground hover:text-foreground'
                   >
                     {copied === 'eth' ? '✓' : 'Copy'}
