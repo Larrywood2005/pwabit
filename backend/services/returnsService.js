@@ -14,22 +14,84 @@ let schedulerInitialized = false;
 export const calculateDailyReturns = async () => {
   try {
     const startTime = Date.now();
-    console.log(`[ReturnsService] Starting daily returns calculation at ${new Date().toISOString()}`);
+    console.log(`[ReturnsService] ✓ DAILY RETURNS CALCULATION STARTED at ${new Date().toISOString()}`);
 
-    // Find all active investments that are at least 24h old
+    // Find all active investments
     const activeInvestments = await Investment.find({ 
-      status: 'active',
-      activatedAt: { $lt: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+      status: 'active'
     });
     
-    console.log(`[ReturnsService] Found ${activeInvestments.length} active investments eligible for ROI check`);
+    console.log(`[ReturnsService] Found ${activeInvestments.length} active investments for processing`);
     
     for (const investment of activeInvestments) {
       try {
+        const now = new Date();
+        
+        console.log(`\n[ROI CHECK] ========================================`);
+        console.log(`[ROI CHECK] Investment ID: ${investment._id}`);
+        console.log(`[ROI CHECK] Status: ${investment.status}`);
+        console.log(`[ROI CHECK] Amount: $${investment.amount}`);
+        console.log(`[ROI CHECK] Daily Return %: ${investment.dailyReturnPercent}%`);
+
+        // ============================================
+        // STRICT DAILY TRADE COMPLETION CHECK
+        // ============================================
+        // CRITICAL: ROI should ONLY be credited AFTER a full 24h cycle completes
+        // NOT during the active trade window
+        
+        let cycleCompleted = false;
+        let reason = '';
+        
+        if (!investment.lastReturnDate) {
+          // FIRST CYCLE: Check if 24h have passed since activation
+          const activatedAt = investment.activatedAt ? new Date(investment.activatedAt) : null;
+          
+          if (!activatedAt) {
+            reason = 'No activatedAt timestamp - cannot process ROI';
+            console.log(`[ROI CHECK] ✗ SKIPPED (no activation time): ${reason}`);
+            continue;
+          }
+          
+          const hoursSinceActivation = (now.getTime() - activatedAt.getTime()) / (1000 * 60 * 60);
+          console.log(`[ROI CHECK] Hours since activation: ${hoursSinceActivation.toFixed(2)}h`);
+          console.log(`[ROI CHECK] Activated at: ${activatedAt.toISOString()}`);
+          console.log(`[ROI CHECK] Now (UTC): ${now.toISOString()}`);
+          
+          if (hoursSinceActivation >= 24) {
+            cycleCompleted = true;
+            reason = `First 24h cycle completed (${hoursSinceActivation.toFixed(2)}h passed)`;
+          } else {
+            reason = `Trade still running - ${(24 - hoursSinceActivation).toFixed(2)}h remaining in first 24h cycle`;
+          }
+        } else {
+          // SUBSEQUENT CYCLES: Check if 24h have passed since last ROI
+          const lastReturnDate = new Date(investment.lastReturnDate);
+          const hoursSinceLastReturn = (now.getTime() - lastReturnDate.getTime()) / (1000 * 60 * 60);
+          
+          console.log(`[ROI CHECK] Hours since last ROI: ${hoursSinceLastReturn.toFixed(2)}h`);
+          console.log(`[ROI CHECK] Last ROI date: ${lastReturnDate.toISOString()}`);
+          console.log(`[ROI CHECK] Now (UTC): ${now.toISOString()}`);
+          
+          if (hoursSinceLastReturn >= 24) {
+            cycleCompleted = true;
+            reason = `Next 24h cycle completed (${hoursSinceLastReturn.toFixed(2)}h passed)`;
+          } else {
+            reason = `Current trade cycle still running - ${(24 - hoursSinceLastReturn).toFixed(2)}h remaining`;
+          }
+        }
+
+        console.log(`[ROI CHECK] Cycle Status: ${cycleCompleted ? '✓ COMPLETED' : '✗ NOT COMPLETED'}`);
+        console.log(`[ROI CHECK] Reason: ${reason}`);
+
+        if (!cycleCompleted) {
+          console.log(`[ROI CHECK] ✗ SKIPPED (trade still active): ${reason}`);
+          console.log(`[ROI CHECK] ========================================\n`);
+          continue; // Skip - trade is still active, do NOT credit ROI yet
+        }
+
         // ============================================
         // STEP 1: ATOMIC LOCK - Prevent parallel execution
         // ============================================
-        // Use findOneAndUpdate to atomically acquire lock
         const lockedInvestment = await Investment.findOneAndUpdate(
           {
             _id: investment._id,
@@ -43,173 +105,139 @@ export const calculateDailyReturns = async () => {
         );
 
         if (!lockedInvestment) {
-          console.log(`[ReturnsService] ⚠️  SKIPPED (locked): Investment ${investment._id} already being processed`);
+          console.log(`[ROI CHECK] ✗ SKIPPED (already processing): Investment ${investment._id} is locked`);
+          console.log(`[ROI CHECK] ========================================\n`);
           continue;
         }
 
-        console.log(`[ReturnsService] ✓ LOCK ACQUIRED for Investment ${investment._id}`);
+        console.log(`[ROI CHECK] ✓ LOCK ACQUIRED for processing`);
 
         // ============================================
-        // STEP 2: STRICT 24-HOUR VALIDATION (UTC only)
+        // STEP 2: DOUBLE-PAYMENT CHECK
         // ============================================
-        const now = new Date();
-        const lastReturnDate = investment.lastReturnDate ? new Date(investment.lastReturnDate) : null;
+        // Verify ROI hasn't already been credited for this cycle
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
         
-        let shouldProcessReturn = false;
-        let reason = '';
-
-        if (!lastReturnDate) {
-          // First return ever - process immediately
-          shouldProcessReturn = true;
-          reason = 'First ROI payout (no lastReturnDate)';
-        } else {
-          // Calculate time elapsed in milliseconds
-          const timeSinceLastReturn = now.getTime() - lastReturnDate.getTime();
-          const twentyFourHoursMs = 24 * 60 * 60 * 1000;
-          
-          if (timeSinceLastReturn >= twentyFourHoursMs) {
-            shouldProcessReturn = true;
-            reason = `${(timeSinceLastReturn / 1000 / 60 / 60).toFixed(2)} hours since last return (>= 24h)`;
-          } else {
-            reason = `Only ${(timeSinceLastReturn / 1000 / 60 / 60).toFixed(2)} hours since last return (< 24h)`;
-          }
-        }
-
-        // Log 24-hour validation decision
-        console.log(`[ReturnsService] 24H VALIDATION:`, {
-          investmentId: investment._id.toString(),
-          lastReturnDate: lastReturnDate ? lastReturnDate.toISOString() : 'NEVER',
-          nowUTC: now.toISOString(),
-          timeSinceLast: lastReturnDate ? `${((now.getTime() - lastReturnDate.getTime()) / 1000 / 60 / 60).toFixed(2)}h` : 'N/A',
-          decision: shouldProcessReturn ? '✓ PROCESS' : '✗ SKIP',
-          reason: reason
+        const alreadyPaidToday = investment.returnHistory?.find(entry => {
+          const entryDate = new Date(entry.date);
+          entryDate.setUTCHours(0, 0, 0, 0);
+          return entryDate.getTime() === today.getTime();
         });
 
-        if (!shouldProcessReturn) {
-          // Release lock and skip
+        if (alreadyPaidToday) {
+          console.log(`[ROI CHECK] ✗ SKIPPED (double-payment prevention): Already paid today`);
           await Investment.findByIdAndUpdate(investment._id, {
             processingReturn: false,
             processingReturnStartedAt: null
           });
-          console.log(`[ReturnsService] ✗ SKIPPED: ${reason}`);
+          console.log(`[ROI CHECK] ========================================\n`);
           continue;
         }
 
+        console.log(`[ROI CHECK] ✓ Double-payment check passed`);
+
         // ============================================
-        // STEP 3: CALCULATE ROI (unchanged calculation logic)
+        // STEP 3: CALCULATE ROI
         // ============================================
         const baseAmount = investment.amount + investment.totalReturnsEarned;
         const dailyReturn = baseAmount * (investment.dailyReturnPercent / 100);
         
-        console.log(`[ReturnsService] ROI CALCULATION:`, {
-          investmentId: investment._id.toString(),
-          baseAmount: baseAmount.toFixed(2),
-          dailyReturnPercent: investment.dailyReturnPercent,
-          calculatedReturn: dailyReturn.toFixed(2),
-          formula: `$${baseAmount.toFixed(2)} * ${investment.dailyReturnPercent}% = $${dailyReturn.toFixed(2)}`
-        });
+        console.log(`[ROI CHECK] ROI CALCULATION:`);
+        console.log(`[ROI CHECK]   Base: $${baseAmount.toFixed(2)} (investment + prior returns)`);
+        console.log(`[ROI CHECK]   Rate: ${investment.dailyReturnPercent}%`);
+        console.log(`[ROI CHECK]   Daily ROI: $${dailyReturn.toFixed(2)}`);
 
         // ============================================
         // STEP 4: UPDATE INVESTMENT WITH ROI
         // ============================================
-        const nowUTC = new Date(); // UTC timestamp
-        
         investment.totalReturnsEarned += dailyReturn;
-        investment.lastReturnDate = nowUTC; // CRITICAL: Store UTC timestamp
-        investment.nextReturnDate = new Date(nowUTC.getTime() + 24 * 60 * 60 * 1000);
+        investment.lastReturnDate = now;
+        investment.nextReturnDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
         
-        // Add to return history (for record-keeping, NOT for validation)
         investment.returnHistory.push({
-          date: nowUTC,
+          date: now,
           amount: dailyReturn,
           compounded: true,
-          dailyReturnPercent: investment.dailyReturnPercent
+          dailyReturnPercent: investment.dailyReturnPercent,
+          cycleNumber: (investment.returnHistory?.length || 0) + 1
         });
 
-        // Release lock ONLY after successful update
         investment.processingReturn = false;
         investment.processingReturnStartedAt = null;
         
         await investment.save();
         
-        console.log(`[ReturnsService] ✓ INVESTMENT UPDATED: Investment ${investment._id}, ROI: $${dailyReturn.toFixed(2)}`);
+        console.log(`[ROI CHECK] ✓ INVESTMENT UPDATED`);
 
         // ============================================
         // STEP 5: CREATE TRANSACTION RECORD
         // ============================================
         const transaction = new Transaction({
           userId: investment.userId,
-          type: 'return',
+          type: 'daily_trade_return',
           amount: dailyReturn,
           investmentId: investment._id,
           status: 'confirmed',
-          confirmedAt: nowUTC
+          confirmedAt: now,
+          details: {
+            dailyReturnPercent: investment.dailyReturnPercent,
+            baseAmount: baseAmount,
+            cycleNumber: investment.returnHistory.length
+          }
         });
         
         await transaction.save();
-        console.log(`[ReturnsService] ✓ TRANSACTION CREATED: ${transaction._id}`);
+        console.log(`[ROI CHECK] ✓ TRANSACTION CREATED: ${transaction._id}`);
 
         // ============================================
-        // STEP 6: UPDATE USER BALANCE (SINGLE UPDATE)
+        // STEP 6: UPDATE USER BALANCE
         // ============================================
         const user = await User.findById(investment.userId);
         if (!user) {
-          console.error(`[ReturnsService] ERROR: User ${investment.userId} not found`);
+          console.error(`[ROI CHECK] ERROR: User ${investment.userId} not found`);
           continue;
         }
 
         const balanceBefore = user.currentBalance;
-        const earningsBefore = user.totalEarnings;
         
-        // CRITICAL: Single balance update to prevent double-crediting
         user.totalEarnings = (user.totalEarnings || 0) + dailyReturn;
         user.investmentReturns = (user.investmentReturns || 0) + dailyReturn;
         user.currentBalance += dailyReturn;
         
         await user.save();
         
-        console.log(`[ReturnsService] ✓ USER BALANCE UPDATED:`, {
-          userId: user._id.toString(),
-          email: user.email,
-          creditAmount: dailyReturn.toFixed(2),
-          balanceBefore: balanceBefore.toFixed(2),
-          balanceAfter: user.currentBalance.toFixed(2),
-          earningsBefore: earningsBefore.toFixed(2),
-          earningsAfter: user.totalEarnings.toFixed(2)
-        });
+        console.log(`[ROI CHECK] ✓ USER BALANCE UPDATED`);
+        console.log(`[ROI CHECK]   User: ${user.email}`);
+        console.log(`[ROI CHECK]   Credit: $${dailyReturn.toFixed(2)}`);
+        console.log(`[ROI CHECK]   Balance before: $${balanceBefore.toFixed(2)}`);
+        console.log(`[ROI CHECK]   Balance after: $${user.currentBalance.toFixed(2)}`);
 
-        // Log transaction with balance snapshot
-        await transactionLogger.logBalanceTransaction(user._id, 'investment_return', dailyReturn, {
-          investmentId: investment._id,
-          dailyReturnPercent: investment.dailyReturnPercent,
-          description: `Daily return: ${investment.dailyReturnPercent}% on $${investment.amount.toFixed(2)}`,
-          transactionId: transaction._id,
-          processingTime: `${Date.now() - startTime}ms`
-        });
-
-        console.log(`[ReturnsService] ✓ COMPLETED: Investment ${investment._id} - ROI $${dailyReturn.toFixed(2)} credited`);
+        console.log(`[ROI CHECK] ✓ ROI CREDITED SUCCESSFULLY`);
+        console.log(`[ROI CHECK] ✓ Next cycle eligible: ${investment.nextReturnDate.toISOString()}`);
+        console.log(`[ROI CHECK] ========================================\n`);
 
       } catch (investmentError) {
-        console.error(`[ReturnsService] ERROR processing investment ${investment._id}:`, investmentError);
+        console.error(`[ROI CHECK] ERROR processing investment ${investment._id}:`, investmentError);
         
-        // CRITICAL: Always release lock on error
         try {
           await Investment.findByIdAndUpdate(investment._id, {
             processingReturn: false,
             processingReturnStartedAt: null
           });
-          console.log(`[ReturnsService] ✓ LOCK RELEASED after error for ${investment._id}`);
-        } catch (lockReleaseError) {
-          console.error(`[ReturnsService] CRITICAL: Failed to release lock for ${investment._id}:`, lockReleaseError);
+          console.log(`[ROI CHECK] ✓ LOCK RELEASED after error`);
+        } catch (lockError) {
+          console.error(`[ROI CHECK] CRITICAL: Failed to release lock:`, lockError);
         }
+        console.log(`[ROI CHECK] ========================================\n`);
       }
     }
 
     const duration = Date.now() - startTime;
-    console.log(`[ReturnsService] Daily returns calculation completed in ${duration}ms`);
+    console.log(`[ReturnsService] ✓ DAILY RETURNS CALCULATION COMPLETED in ${duration}ms`);
     
   } catch (error) {
-    console.error('[ReturnsService] CRITICAL ERROR in calculateDailyReturns:', error);
+    console.error('[ReturnsService] CRITICAL ERROR:', error);
   }
 };
 

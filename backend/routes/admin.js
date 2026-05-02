@@ -577,6 +577,11 @@ router.post('/confirm-deposit/:transactionId', authenticate, authorize(['super_a
       investment.status = 'active';
       investment.activatedAt = new Date();
       investment.canTradeAfter = new Date(); // Can trade immediately after activation
+      
+      // CRITICAL: Set endDate based on investment duration (default 30 days)
+      const duration = investment.duration || 30; // Default 30 days if not specified
+      investment.endDate = new Date(Date.now() + duration * 24 * 60 * 60 * 1000);
+      
       investment.nextReturnDate = new Date(Date.now() + 24 * 60 * 60 * 1000); // First return after 24 hours
 
       const savedInvestment = await investment.save();
@@ -759,6 +764,25 @@ router.post('/confirm-deposit/:transactionId', authenticate, authorize(['super_a
           }
         }
         // ========== END REFERRAL COMMISSION DISTRIBUTION ==========
+      }
+
+      // Emit Socket.io event to notify user of deposit confirmation
+      if (router.io && transaction.userId) {
+        try {
+          router.io.to(`user_${transaction.userId.toString()}`).emit('deposit-confirmed', {
+            id: transaction._id,
+            amount: transaction.amount,
+            currency: transaction.currency || 'USD',
+            status: 'confirmed',
+            message: `Deposit of $${transaction.amount} confirmed. Investment activated.`,
+            investmentActivated: true,
+            investmentId: savedInvestment?._id,
+            timestamp: new Date()
+          });
+          console.log('[v0] Socket.io - Deposit confirmed event emitted to user:', transaction.userId);
+        } catch (socketErr) {
+          console.error('[v0] Socket.io - Failed to emit deposit-confirmed:', socketErr.message);
+        }
       }
 
       // Return comprehensive response with activation details

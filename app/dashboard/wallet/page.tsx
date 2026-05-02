@@ -114,6 +114,7 @@ export default function WalletPage() {
     if (!user?.id) return;
 
     let mounted = true;
+    let pollingInterval: NodeJS.Timeout | null = null;
 
     const setupSocket = async () => {
       try {
@@ -135,11 +136,27 @@ export default function WalletPage() {
           if (mounted) {
             setIsConnected(true);
             socketRef.current?.emit('join', user.id);
+            // Clear polling when Socket.io connects
+            if (pollingInterval) {
+              clearInterval(pollingInterval);
+              pollingInterval = null;
+            }
           }
         });
 
         socketRef.current.on('disconnect', () => {
-          if (mounted) setIsConnected(false);
+          if (mounted) {
+            setIsConnected(false);
+            // Start polling as fallback when Socket.io disconnects
+            console.log('[v0] Socket.io disconnected, starting polling fallback...');
+            if (!pollingInterval) {
+              pollingInterval = setInterval(() => {
+                if (mounted) {
+                  fetchWalletData();
+                }
+              }, 5000); // Poll every 5 seconds
+            }
+          }
         });
 
         // Listen for new transactions in realtime
@@ -231,6 +248,11 @@ export default function WalletPage() {
 
     return () => {
       mounted = false;
+      // Clear polling interval
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+      }
       if (socketRef.current) {
         try {
           socketRef.current.emit('leave', user.id);
