@@ -541,7 +541,7 @@ export default function NewInvestmentPage() {
             
             <div className='space-y-4'>
               <div className='p-4 rounded-lg border border-border'>
-                <p className='text-sm text-muted-foreground mb-2'>Network: USDT ERC20</p>
+                <p className='text-sm text-muted-foreground mb-2'>Network: USDT BEP20(Binance Smart Chain)</p>
                 <div className='flex items-center gap-2'>
                   <code className='flex-1 p-2 rounded bg-background text-xs font-mono break-all text-foreground'>
                     {DEPOSIT_WALLETS.usdtBep20?.address}
@@ -556,7 +556,7 @@ export default function NewInvestmentPage() {
               </div>
 
               <div className='p-4 rounded-lg border border-border'>
-                <p className='text-sm text-muted-foreground mb-2'>Network: Ethereum</p>
+                <p className='text-sm text-muted-foreground mb-2'>Network: USTD ERC20 (Ethereum)</p>
                 <div className='flex items-center gap-2'>
                   <code className='flex-1 p-2 rounded bg-background text-xs font-mono break-all text-foreground'>
                     {DEPOSIT_WALLETS.ustdERC20?.address}
@@ -571,7 +571,7 @@ export default function NewInvestmentPage() {
               </div>
 
               <div className='p-4 rounded-lg border border-border'>
-                <p className='text-sm text-muted-foreground mb-2'>Network: SOL</p>
+                <p className='text-sm text-muted-foreground mb-2'>Network: USTD SOL</p>
                 <div className='flex items-center gap-2'>
                   <code className='flex-1 p-2 rounded bg-background text-xs font-mono break-all text-foreground'>
                     {DEPOSIT_WALLETS.sol?.address}
