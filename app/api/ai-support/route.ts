@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { connectDB } from '@/backend/config/database';
+import ChatMessage from '@/backend/models/ChatMessage';
 
 // Improved AI Response Generator with Context Awareness
 const generateAIResponse = (userMessage: string, conversationHistory: any[] = []): string => {
@@ -124,8 +126,9 @@ const generateAIResponse = (userMessage: string, conversationHistory: any[] = []
 
 export async function POST(request: NextRequest) {
   try {
+    await connectDB();
     const body = await request.json();
-    const { message, conversationHistory = [] } = body;
+    const { message, conversationHistory = [], userId, userName, userEmail, subject } = body;
 
     if (!message || message.trim().length === 0) {
       return NextResponse.json(
@@ -136,6 +139,45 @@ export async function POST(request: NextRequest) {
 
     // Generate context-aware AI response using conversation history
     const reply = generateAIResponse(message, conversationHistory);
+
+    // Save user's AI support message to chat collection
+    try {
+      const userMessage = new ChatMessage({
+        userId: userId || null,
+        userEmail: userEmail || 'ai-support@powabitz.com',
+        userName: userName || 'AI Support User',
+        sender: userId ? 'user' : 'contact',
+        message: message.trim(),
+        subject: subject || 'AI Support',
+        hasText: true,
+        hasImage: false,
+        isResolved: false,
+        timestamp: new Date()
+      });
+      
+      await userMessage.save();
+      console.log('[v0] AI Support message saved:', { messageId: userMessage._id });
+
+      // Save AI response as admin reply
+      const aiReply = new ChatMessage({
+        userId: userId || null,
+        userEmail: userEmail || 'ai-support@powabitz.com',
+        userName: 'AI Support Assistant',
+        sender: 'admin',
+        message: reply,
+        subject: subject || 'AI Support',
+        hasText: true,
+        hasImage: false,
+        isResolved: false,
+        timestamp: new Date()
+      });
+      
+      await aiReply.save();
+      console.log('[v0] AI Reply saved:', { messageId: aiReply._id });
+    } catch (dbError) {
+      console.error('[v0] Error saving AI support messages to DB:', dbError);
+      // Continue even if DB save fails - still return response to user
+    }
 
     return NextResponse.json({
       success: true,

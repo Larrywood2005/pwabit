@@ -58,6 +58,11 @@ const io = new SocketIOServer(server, {
   }
 });
 
+// Make Socket.IO globally available for API routes
+global.socketIO = io;
+
+console.log('[Socket.IO] Made available globally for API routes');
+
 // Initialize transaction service with Socket.io
 initTransactionService(io);
 

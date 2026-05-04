@@ -3,6 +3,33 @@ import { connectDB } from '@/backend/config/database';
 import ChatMessage from '@/backend/models/ChatMessage';
 import User from '@/backend/models/User';
 
+// Get Socket.IO instance from global scope (set by server on initialization)
+const getSocketIO = () => {
+  try {
+    // In Node.js, global.socketIO is set by the backend server
+    return (global as any).socketIO;
+  } catch (error) {
+    console.log('[v0] Socket.IO not available from global scope');
+    return null;
+  }
+};
+
+// Function to emit real-time message to admin
+const emitToAdmin = (messageData: any) => {
+  try {
+    const socketIO = getSocketIO();
+    if (socketIO) {
+      socketIO.to('admin-messages').emit('new-message', messageData);
+      console.log('[v0] Socket message broadcasted to admin', { messageId: messageData._id });
+    } else {
+      console.log('[v0] Socket.IO not available for real-time broadcast - API will fallback to polling');
+    }
+  } catch (error) {
+    console.error('[v0] Error emitting socket message:', error);
+    // Don't throw - let the API response complete even if socket fails
+  }
+};
+
 export async function POST(request: NextRequest) {
   try {
     await connectDB();
@@ -78,6 +105,21 @@ export async function POST(request: NextRequest) {
       messageId: chatMessage._id,
       sender: chatMessage.sender,
       timestamp: chatMessage.timestamp
+    });
+    
+    // Emit real-time event to admin dashboard
+    emitToAdmin({
+      _id: chatMessage._id,
+      userId: chatMessage.userId,
+      userName: chatMessage.userName,
+      userEmail: chatMessage.userEmail,
+      message: chatMessage.message,
+      image: chatMessage.image,
+      sender: chatMessage.sender,
+      timestamp: chatMessage.timestamp,
+      isResolved: chatMessage.isResolved,
+      hasText: chatMessage.hasText,
+      hasImage: chatMessage.hasImage
     });
     
     return NextResponse.json({
