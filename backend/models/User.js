@@ -50,6 +50,11 @@ const userSchema = new mongoose.Schema({
     enum: ['active', 'suspended', 'flagged', 'deleted', 'blocked'], 
     default: 'active' 
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin', 'super_admin'],
+    default: 'user'
+  },
   suspicionFlags: [String], // Track reasons for suspension
   
   // User action tracking

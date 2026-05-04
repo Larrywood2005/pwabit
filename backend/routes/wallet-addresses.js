@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 import WalletAddress from '../models/WalletAddress.js';
 
 const router = express.Router();
@@ -226,16 +226,16 @@ router.delete('/delete/:walletId', authenticate, async (req, res) => {
 });
 
 // Admin: Get all wallet addresses
-router.get('/admin/all-wallets', authenticate, async (req, res) => {
+router.get('/admin/all-wallets', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
+    console.log('[v0] Admin fetching all wallet addresses', { adminId: req.user._id });
 
     const wallets = await WalletAddress.find()
       .populate('userId', 'email phone balance')
       .sort({ addedAt: -1 })
       .limit(1000);
+
+    console.log('[v0] Wallets fetched:', { count: wallets.length });
 
     res.json({
       message: 'All wallet addresses',
@@ -244,7 +244,7 @@ router.get('/admin/all-wallets', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('[v0] Admin wallets fetch error:', error);
-    res.status(500).json({ message: 'Failed to fetch wallet addresses' });
+    res.status(500).json({ message: 'Failed to fetch wallet addresses', error: error.message });
   }
 });
 

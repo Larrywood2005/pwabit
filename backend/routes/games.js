@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, authorize } from '../middleware/auth.js';
 import GameReward from '../models/GameReward.js';
 import User from '../models/User.js';
 import transactionLogger from '../services/transactionLogger.js';
@@ -413,11 +413,9 @@ router.get('/check-claim/:type', authenticate, async (req, res) => {
 });
 
 // Admin: Get all game rewards
-router.get('/admin/all-rewards', authenticate, async (req, res) => {
+router.get('/admin/all-rewards', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
+    console.log('[v0] Admin fetching all game rewards', { adminId: req.user._id });
 
     const rewards = await GameReward.find()
       .populate('userId', 'email phone balance')
@@ -425,6 +423,8 @@ router.get('/admin/all-rewards', authenticate, async (req, res) => {
       .limit(500);
 
     const totalDistributed = rewards.reduce((sum, r) => sum + r.amount, 0);
+
+    console.log('[v0] Rewards fetched:', { count: rewards.length, totalDistributed });
 
     res.json({
       message: 'All game rewards',
@@ -434,7 +434,7 @@ router.get('/admin/all-rewards', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('[v0] Admin rewards fetch error:', error);
-    res.status(500).json({ message: 'Failed to fetch rewards' });
+    res.status(500).json({ message: 'Failed to fetch rewards', error: error.message });
   }
 });
 
