@@ -37,130 +37,37 @@ export default function ActivitiesPage() {
   const fetchActivities = async () => {
     try {
       setError('');
+      console.log('[ACTIVITIES] Starting fetch from unified endpoint...');
+      
       // Get auth token from localStorage
       const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
       
-      // Fetch from multiple sources to get complete activity history
-      const [investments, transactions, activities] = await Promise.all([
-        fetch('/api/investments', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        }).then(r => r.json()).catch(() => ({ data: [] })),
-        fetch('/api/transactions', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        }).then(r => r.json()).catch(() => ({ data: [] })),
-        fetch('/api/activities', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        }).then(r => r.json()).catch(() => ({ data: [] }))
-      ]);
-
-      // Convert all data sources to activity format
-      const activitiesArray: Activity[] = [];
-
-      // Add investment activities
-      (investments.data || []).forEach((inv: any) => {
-        activitiesArray.push({
-          id: inv._id,
-          type: 'investment',
-          title: `${inv.cryptoType || 'Investment'} Created`,
-          description: `Invested ${formatCurrency(inv.amount)} with ${inv.dailyReturnPercent || 2.5}% daily returns`,
-          amount: inv.amount,
-          status: inv.status === 'active' ? 'completed' : inv.status,
-          date: inv.activatedAt || inv.createdAt || new Date().toISOString()
-        });
-
-        // Add return activities
-        if (inv.totalReturnsEarned > 0) {
-          activitiesArray.push({
-            id: `return-${inv._id}`,
-            type: 'return',
-            title: 'Daily Return Earned',
-            description: `Earned ${formatCurrency(inv.totalReturnsEarned)} from investment returns`,
-            amount: inv.totalReturnsEarned,
-            status: 'completed',
-            date: inv.lastReturnDate || inv.updatedAt || new Date().toISOString()
-          });
-        }
-
-        // Add trade activities
-        if (inv.tradeHistory && inv.tradeHistory.length > 0) {
-          inv.tradeHistory.forEach((trade: any, idx: number) => {
-            activitiesArray.push({
-              id: `trade-${inv._id}-${idx}`,
-              type: 'trade',
-              title: 'Trade Executed',
-              description: `Trade profit: ${trade.profitPercentage}%`,
-              amount: trade.profitAmount || 0,
-              status: trade.status === 'completed' ? 'completed' : 'pending',
-              date: trade.endTime || trade.startTime || new Date().toISOString()
-            });
-          });
-        }
+      // Single source of truth: Fetch ALL transactions from unified endpoint
+      const response = await fetch('/api/wallets/all-transactions?page=1&limit=50', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
-      // Add withdrawal, deposit, and referral commission activities
-      (transactions.data || []).forEach((trans: any) => {
-        if (trans.type === 'withdrawal') {
-          activitiesArray.push({
-            id: trans._id,
-            type: 'withdrawal',
-            title: 'Withdrawal Requested',
-            description: `Withdrawal of ${formatCurrency(trans.amount)} to wallet`,
-            amount: trans.amount,
-            status: trans.status,
-            date: trans.createdAt || new Date().toISOString()
-          });
-        } else if (trans.type === 'deposit') {
-          activitiesArray.push({
-            id: trans._id,
-            type: 'deposit',
-            title: 'Deposit Received',
-            description: `Deposited ${formatCurrency(trans.amount)}`,
-            amount: trans.amount,
-            status: trans.status,
-            date: trans.createdAt || new Date().toISOString()
-          });
-        } else if (trans.type === 'referral_commission') {
-          const tierLabel = trans.details?.tier ? `Tier ${trans.details.tier}` : '';
-          const percentLabel = trans.details?.percentage ? ` (${trans.details.percentage}%)` : '';
-          activitiesArray.push({
-            id: trans._id,
-            type: 'referral',
-            title: `Referral Commission ${tierLabel}${percentLabel}`,
-            description: trans.description || `Earned ${formatCurrency(trans.amount)} from referral`,
-            amount: trans.amount,
-            status: trans.status === 'completed' ? 'completed' : 'pending',
-            date: trans.createdAt || new Date().toISOString()
-          });
-        }
-      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
-      // Add activity rewards (daily bonus, games, referrals)
-      (activities.data || []).forEach((activity: any) => {
-        let activityType: Activity['type'] = 'return';
-        
-        if (activity.activityType?.includes('daily-login') || activity.type === 'daily-login') {
-          activityType = 'daily-login';
-        } else if (activity.activityType?.includes('game') || activity.type === 'game') {
-          activityType = 'game';
-        }
-
-        activitiesArray.push({
-          id: activity._id,
-          type: activityType,
-          title: activity.title || (activityType === 'daily-login' ? 'Daily Login Bonus' : activityType === 'game' ? 'Game Reward' : 'Activity Completed'),
-          description: activity.description || `Earned ${formatCurrency(activity.rewardAmount)}`,
-          amount: activity.rewardAmount || 0,
-          status: activity.status === 'credited' ? 'completed' : 'pending',
-          date: activity.creditedAt || activity.completedAt || activity.createdAt || new Date().toISOString()
-        });
-      });
-
-      // Sort by date descending (newest first)
-      activitiesArray.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const data = await response.json();
+      console.log('[ACTIVITIES] Response:', data);
       
+      const activitiesArray: Activity[] = (data.data || []).map((tx: any) => ({
+        id: tx.id,
+        type: tx.type,
+        title: tx.title,
+        description: tx.description,
+        amount: tx.amount,
+        status: tx.status,
+        date: tx.date
+      }));
+
+      console.log('[ACTIVITIES] Converted to activities array:', activitiesArray.length, 'items');
       setActivities(activitiesArray);
     } catch (err: any) {
-      console.error('[v0] Error fetching activities:', err);
+      console.error('[ACTIVITIES] Error fetching activities:', err);
       setError('Failed to load activities. Please refresh the page.');
     } finally {
       setLoading(false);
@@ -201,7 +108,7 @@ export default function ActivitiesPage() {
         });
 
         // Listen for new game reward activity
-        socketRef.current.on('gameRewardClaimed', (data: any) => {
+        socketRef.current.on('game-reward-claimed', (data: any) => {
           if (mounted) {
             const newActivity: Activity = {
               id: `game-${Date.now()}`,
@@ -217,7 +124,7 @@ export default function ActivitiesPage() {
         });
 
         // Listen for daily login bonus activity
-        socketRef.current.on('dailyLoginClaimed', (data: any) => {
+        socketRef.current.on('daily-login-bonus', (data: any) => {
           if (mounted) {
             const newActivity: Activity = {
               id: `daily-${Date.now()}`,
@@ -232,46 +139,95 @@ export default function ActivitiesPage() {
           }
         });
 
-        // Listen for new transactions
-        socketRef.current.on('newTransaction', (transaction: any) => {
+        // Listen for ROI returns
+        socketRef.current.on('daily-trade-return', (data: any) => {
           if (mounted) {
-            let type: Activity['type'] = 'return';
-            let title = 'Transaction';
-            let icon = '';
-
-            if (transaction.type === 'withdrawal') {
-              type = 'withdrawal';
-              title = 'Withdrawal Requested';
-            } else if (transaction.type === 'deposit') {
-              type = 'deposit';
-              title = 'Deposit Received';
-            } else if (transaction.type === 'referral_commission') {
-              type = 'referral';
-              title = 'Referral Commission';
-            }
-
             const newActivity: Activity = {
-              id: transaction._id || `txn-${Date.now()}`,
-              type,
-              title,
-              description: transaction.description || `${formatCurrency(transaction.amount)}`,
-              amount: transaction.amount,
-              status: transaction.status === 'completed' ? 'completed' : 'pending',
+              id: `roi-${Date.now()}`,
+              type: 'return',
+              title: 'Daily Trade ROI',
+              description: `Daily ROI Return - ${data.dailyReturnPercent || 2.5}%`,
+              amount: data.amount || 0,
+              status: 'completed',
               date: new Date().toISOString()
             };
             setActivities(prev => [newActivity, ...prev]);
           }
         });
 
-        // Listen for investment activity
-        socketRef.current.on('investmentCreated', (investment: any) => {
+        // Listen for withdrawal requests
+        socketRef.current.on('withdrawal-created', (data: any) => {
           if (mounted) {
             const newActivity: Activity = {
-              id: investment._id || `inv-${Date.now()}`,
-              type: 'investment',
-              title: `${investment.cryptoType || 'Investment'} Created`,
-              description: `Invested ${formatCurrency(investment.amount)}`,
-              amount: investment.amount,
+              id: `withdrawal-${Date.now()}`,
+              type: 'withdrawal',
+              title: 'Withdrawal Requested',
+              description: `Withdrawal of ${formatCurrency(data.amount)}`,
+              amount: data.amount,
+              status: 'pending',
+              date: new Date().toISOString()
+            };
+            setActivities(prev => [newActivity, ...prev]);
+          }
+        });
+
+        // Listen for completed deposits
+        socketRef.current.on('deposit-confirmed', (data: any) => {
+          if (mounted) {
+            const newActivity: Activity = {
+              id: `deposit-${Date.now()}`,
+              type: 'deposit',
+              title: 'Deposit Received',
+              description: `Deposited ${formatCurrency(data.amount)}`,
+              amount: data.amount,
+              status: 'completed',
+              date: new Date().toISOString()
+            };
+            setActivities(prev => [newActivity, ...prev]);
+          }
+        });
+
+        // Listen for referral commissions
+        socketRef.current.on('referral-commission', (data: any) => {
+          if (mounted) {
+            const newActivity: Activity = {
+              id: `referral-${Date.now()}`,
+              type: 'referral',
+              title: `Referral Commission Tier ${data.tier || 1}`,
+              description: `Earned ${formatCurrency(data.amount)} from referral (${data.percentage || 5}%)`,
+              amount: data.amount,
+              status: 'completed',
+              date: new Date().toISOString()
+            };
+            setActivities(prev => [newActivity, ...prev]);
+          }
+        });
+
+        // Listen for giveaway sent
+        socketRef.current.on('giveaway-sent', (data: any) => {
+          if (mounted) {
+            const newActivity: Activity = {
+              id: `giveaway-sent-${Date.now()}`,
+              type: 'referral',
+              title: 'Giveaway Sent',
+              description: `Sent ${formatCurrency(data.amount)} to ${data.receiverUserCode || 'User'}`,
+              amount: data.amount,
+              status: 'completed',
+              date: new Date().toISOString()
+            };
+            setActivities(prev => [newActivity, ...prev]);
+          }
+        });
+
+        // Listen for giveaway received
+        socketRef.current.on('giveaway-received', (data: any) => {
+          if (mounted) {
+            const newActivity: Activity = {
+              id: `giveaway-received-${Date.now()}`,
+              type: 'referral',
+              title: 'Giveaway Received',
+              description: `Received ${formatCurrency(data.amount)} from ${data.senderUserCode || 'User'}`,
+              amount: data.amount,
               status: 'completed',
               date: new Date().toISOString()
             };

@@ -244,7 +244,190 @@ router.get('/transactions', authenticate, async (req, res) => {
   }
 });
 
-// Get user wallet info (alias for /my-wallet but returns consistent format)
+// Get ALL transactions (for activities page - comprehensive history)
+router.get('/all-transactions', authenticate, async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+    
+    console.log('[ALL-TRANSACTIONS] Fetching for user:', req.user.userId, 'Page:', page, 'Limit:', limit);
+    
+    // MAIN FIX: Fetch from Transaction collection (TRUE SOURCE OF TRUTH)
+    // Include ALL transaction types for comprehensive activity history
+    const transactions = await Transaction.find({
+      userId: req.user.userId,
+      type: { 
+        $in: [
+          'deposit', 
+          'withdrawal', 
+          'return', 
+          'returns',
+          'daily_trade_return',
+          'activity_reward', 
+          'giveaway_sent', 
+          'giveaway_received',
+          'referral_commission',
+          'powaup_sent',
+          'powaup_received',
+          'bonus',
+          'game_reward',
+          'daily_login_bonus',
+          'investment_created'
+        ] 
+      }
+    })
+    .sort({ createdAt: -1 })  // Latest first
+    .limit(limit)
+    .skip(skip)
+    .lean();
+
+    console.log('[ALL-TRANSACTIONS] Found', transactions.length, 'transactions');
+    
+    // Get total count for pagination
+    const total = await Transaction.countDocuments({
+      userId: req.user.userId,
+      type: { 
+        $in: [
+          'deposit', 
+          'withdrawal', 
+          'return', 
+          'returns',
+          'daily_trade_return',
+          'activity_reward', 
+          'giveaway_sent', 
+          'giveaway_received',
+          'referral_commission',
+          'powaup_sent',
+          'powaup_received',
+          'bonus',
+          'game_reward',
+          'daily_login_bonus',
+          'investment_created'
+        ] 
+      }
+    });
+
+    console.log('[ALL-TRANSACTIONS] Total available:', total);
+    
+    // Map transactions to activity format for frontend
+    const formattedTransactions = transactions.map(tx => {
+      const activityType = getActivityType(tx.type);
+      return {
+        id: tx._id?.toString() || tx.transactionHash || `tx-${Date.now()}`,
+        type: activityType,
+        title: getActivityTitle(tx.type, tx),
+        description: getActivityDescription(tx),
+        amount: tx.amount || 0,
+        currency: tx.currency || 'USD',
+        status: getActivityStatus(tx.status),
+        date: tx.createdAt || new Date(),
+        details: tx.details,
+        withdrawalFee: tx.withdrawalFee,
+        investmentId: tx.investmentId
+      };
+    });
+    
+    res.json({
+      data: formattedTransactions,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('[ALL-TRANSACTIONS] Error fetching transactions:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch transactions', 
+      error: error.message,
+      data: [],
+      pagination: { page: 1, limit: 20, total: 0 }
+    });
+  }
+});
+
+// Helper function to convert transaction type to activity type for display
+function getActivityType(type) {
+  const typeMap = {
+    'deposit': 'deposit',
+    'withdrawal': 'withdrawal',
+    'return': 'return',
+    'returns': 'return',
+    'daily_trade_return': 'return',
+    'activity_reward': 'return',
+    'giveaway_sent': 'referral',
+    'giveaway_received': 'referral',
+    'referral_commission': 'referral',
+    'powaup_sent': 'return',
+    'powaup_received': 'return',
+    'bonus': 'return',
+    'game_reward': 'game',
+    'daily_login_bonus': 'daily-login',
+    'investment_created': 'investment'
+  };
+  return typeMap[type] || 'return';
+}
+
+// Helper function to get activity title from transaction
+function getActivityTitle(type, transaction) {
+  const titles = {
+    'deposit': 'Deposit Received',
+    'withdrawal': 'Withdrawal Requested',
+    'return': 'ROI Return',
+    'returns': 'ROI Return',
+    'daily_trade_return': 'Daily Trade ROI',
+    'activity_reward': 'Activity Reward',
+    'giveaway_sent': 'Giveaway Sent',
+    'giveaway_received': 'Giveaway Received',
+    'referral_commission': 'Referral Commission',
+    'powaup_sent': 'PowaUp Sent',
+    'powaup_received': 'PowaUp Received',
+    'bonus': 'Bonus Credited',
+    'game_reward': 'Game Reward Earned',
+    'daily_login_bonus': 'Daily Login Bonus',
+    'investment_created': 'Investment Created'
+  };
+  return titles[type] || type.replace(/_/g, ' ').toUpperCase();
+}
+
+// Helper function to get activity description
+function getActivityDescription(transaction) {
+  if (transaction.description) return transaction.description;
+  
+  switch(transaction.type) {
+    case 'daily_trade_return':
+      return `Daily ROI Return - ${transaction.details?.dailyReturnPercent || '2.5'}%`;
+    case 'referral_commission':
+      return `Tier ${transaction.details?.tier || 1} - ${transaction.details?.percentage || 5}%`;
+    case 'giveaway_sent':
+      return `Sent to ${transaction.details?.receiverUserCode || 'User'}`;
+    case 'giveaway_received':
+      return `Received from ${transaction.details?.senderUserCode || 'User'}`;
+    case 'withdrawal':
+      return `Withdrawal of $${(transaction.amount || 0).toFixed(2)}`;
+    case 'deposit':
+      return `Deposit of $${(transaction.amount || 0).toFixed(2)}`;
+    default:
+      return `$${(transaction.amount || 0).toFixed(2)}`;
+  }
+}
+
+// Helper function to get activity status
+function getActivityStatus(status) {
+  const statusMap = {
+    'completed': 'completed',
+    'confirmed': 'completed',
+    'pending': 'pending',
+    'processing': 'pending',
+    'failed': 'failed',
+    'cancelled': 'failed',
+    'credited': 'completed',
+    'credited-pending': 'pending'
+  };
+  return statusMap[status] || 'pending';
+
 router.get('/me', authenticate, async (req, res) => {
   try {
     const wallet = await Wallet.findOne({ userId: req.user.userId });
