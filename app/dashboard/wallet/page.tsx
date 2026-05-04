@@ -575,7 +575,7 @@ export default function WalletPage() {
                             }`}>
                               {tx.status}
                             </span>
-                            {tx.withdrawalFee > 0 && (
+                            {(tx.withdrawalFee ?? 0) > 0 && (
                               <p className='text-xs text-muted-foreground mt-2'>
                                 Fee: -${(tx.withdrawalFee || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                               </p>
