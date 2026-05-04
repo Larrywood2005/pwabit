@@ -2126,7 +2126,7 @@ router.get('/chat-messages', authenticate, authorize(['super_admin', 'admin']), 
     console.log('[v0] Admin fetching chat messages:', { page, limit, unreadOnly });
 
     // Query for messages
-    let query: any = {};
+    let query = {};
     if (unreadOnly === 'true') {
       query.isResolved = false;
     }
@@ -2208,7 +2208,7 @@ router.put('/chat-messages/:messageId', authenticate, authorize(['super_admin', 
     });
 
     // Find and update message
-    const updateData: any = {
+    const updateData = {
       updatedAt: new Date()
     };
 
