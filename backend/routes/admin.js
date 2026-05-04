@@ -6,6 +6,7 @@ import Transaction from '../models/Transaction.js';
 import Investment from '../models/Investment.js';
 import Admin from '../models/Admin.js';
 import Wallet from '../models/Wallet.js';
+import ChatMessage from '../models/ChatMessage.js';
 import balanceService from '../services/balanceService.js';
 import transactionLogger from '../services/transactionLogger.js';
 import { notificationService } from '../services/notificationService.js';
@@ -2113,6 +2114,150 @@ router.post('/grant-usd', authenticate, authorize(['super_admin', 'admin']), asy
   } catch (error) {
     console.error('[v0] Error granting USD:', error);
     res.status(500).json({ message: 'Failed to grant USD', error: error.message });
+  }
+});
+
+// Get all chat messages for admin (STEP 1: FIX 500 ERROR)
+router.get('/chat-messages', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
+  try {
+    const { page = 1, limit = 50, unreadOnly = false } = req.query;
+    const skip = (page - 1) * limit;
+
+    console.log('[v0] Admin fetching chat messages:', { page, limit, unreadOnly });
+
+    // Query for messages
+    let query: any = {};
+    if (unreadOnly === 'true') {
+      query.isResolved = false;
+    }
+
+    // Fetch messages with proper error handling
+    const messages = await ChatMessage.find(query)
+      .populate('userId', 'fullName email userCode')
+      .populate('repliedBy', 'fullName email')
+      .sort({ timestamp: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+
+    const total = await ChatMessage.countDocuments(query);
+
+    console.log('[v0] Chat messages fetched successfully:', {
+      count: messages.length,
+      total,
+      page,
+      limit
+    });
+
+    res.json({
+      success: true,
+      messages,
+      total,
+      pages: Math.ceil(total / limit),
+      currentPage: parseInt(page)
+    });
+  } catch (error) {
+    console.error('[v0] Error fetching chat messages:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch chat messages',
+      error: error.message
+    });
+  }
+});
+
+// Get single chat message
+router.get('/chat-messages/:messageId', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
+  try {
+    const message = await ChatMessage.findById(req.params.messageId)
+      .populate('userId', 'fullName email userCode')
+      .populate('repliedBy', 'fullName email');
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message
+    });
+  } catch (error) {
+    console.error('[v0] Error fetching message:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch message',
+      error: error.message
+    });
+  }
+});
+
+// Update chat message status (mark as resolved, reply, etc.)
+router.put('/chat-messages/:messageId', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
+  try {
+    const { isResolved, reply } = req.body;
+    const adminId = req.user._id || req.user.userId || req.user.id;
+
+    console.log('[v0] Admin updating message:', {
+      messageId: req.params.messageId,
+      adminId,
+      isResolved,
+      hasReply: !!reply
+    });
+
+    // Find and update message
+    const updateData: any = {
+      updatedAt: new Date()
+    };
+
+    if (typeof isResolved === 'boolean') {
+      updateData.isResolved = isResolved;
+    }
+
+    if (reply) {
+      updateData.repliedBy = adminId;
+      updateData.replyTime = new Date();
+      updateData.isResolved = true;
+    }
+
+    const message = await ChatMessage.findByIdAndUpdate(
+      req.params.messageId,
+      updateData,
+      { new: true }
+    )
+      .populate('userId', 'fullName email')
+      .populate('repliedBy', 'fullName email');
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: 'Message not found'
+      });
+    }
+
+    // Emit socket event if available
+    if (router.io && reply) {
+      router.io.to('admin-messages').emit('message-replied', {
+        messageId: message._id,
+        status: 'replied',
+        repliedAt: message.replyTime
+      });
+    }
+
+    res.json({
+      success: true,
+      message,
+      updated: true
+    });
+  } catch (error) {
+    console.error('[v0] Error updating message:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update message',
+      error: error.message
+    });
   }
 });
 

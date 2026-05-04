@@ -59,6 +59,9 @@ const io = new SocketIOServer(server, {
 // Initialize transaction service with Socket.io
 initTransactionService(io);
 
+// Import ChatMessage model for socket events
+import ChatMessage from './models/ChatMessage.js';
+
 // Socket.io connection handling with detailed logging
 io.on('connection', (socket) => {
   console.log('[Socket.IO] Client connected:', socket.id, 'Transport:', socket.conn.transport.name);
@@ -72,11 +75,12 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Admin joins admin room for dashboard updates
+  // Admin joins admin room for dashboard updates and real-time messages
   socket.on('join-admin', (adminId) => {
     if (adminId) {
       socket.join('admin');
-      console.log(`[Socket.IO] Admin ${adminId} joined admin room`);
+      socket.join('admin-messages');
+      console.log(`[Socket.IO] Admin ${adminId} joined admin room and admin-messages room`);
     }
   });
 
@@ -86,6 +90,141 @@ io.on('connection', (socket) => {
       const roomId = `user_${userId}`;
       socket.leave(roomId);
       console.log(`[Socket.IO] User ${userId} left room: ${roomId}`);
+    }
+  });
+
+  // Real-time message handler: receive user message and broadcast to admin
+  socket.on('send-message', async (data) => {
+    try {
+      const { userName, userEmail, message, userId, subject } = data;
+      
+      console.log('[Socket.IO] New message received:', {
+        userName,
+        userEmail,
+        userId,
+        subject,
+        hasMessage: !!message
+      });
+
+      // Save message to database
+      const chatMessage = new ChatMessage({
+        userId: userId || null,
+        userEmail,
+        userName,
+        sender: userId ? 'user' : 'contact',
+        message,
+        subject: subject || undefined,
+        hasText: !!message,
+        hasImage: false,
+        isResolved: false,
+        timestamp: new Date()
+      });
+
+      await chatMessage.save();
+      console.log('[Socket.IO] Message saved to database:', chatMessage._id);
+
+      // Broadcast to admin room
+      io.to('admin-messages').emit('new-message', {
+        _id: chatMessage._id,
+        userName,
+        userEmail,
+        userId,
+        message,
+        subject,
+        sender: userId ? 'user' : 'contact',
+        timestamp: chatMessage.timestamp,
+        isResolved: false
+      });
+
+      console.log('[Socket.IO] New message broadcasted to admin room');
+    } catch (error) {
+      console.error('[Socket.IO] Error handling send-message:', error.message);
+      socket.emit('message-error', { message: 'Failed to send message', error: error.message });
+    }
+  });
+
+  // Admin sends reply to user
+  socket.on('send-reply', async (data) => {
+    try {
+      const { messageId, replyText, adminId, userId } = data;
+      
+      console.log('[Socket.IO] Admin reply received:', {
+        messageId,
+        adminId,
+        userId,
+        hasReply: !!replyText
+      });
+
+      // Find and update message
+      const message = await ChatMessage.findByIdAndUpdate(
+        messageId,
+        {
+          repliedBy: adminId,
+          replyTime: new Date(),
+          isResolved: true,
+          updatedAt: new Date()
+        },
+        { new: true }
+      );
+
+      if (!message) {
+        throw new Error('Message not found');
+      }
+
+      // Create reply message
+      const replyMessage = new ChatMessage({
+        userId: userId || null,
+        userEmail: message.userEmail,
+        userName: 'Admin Support',
+        sender: 'admin',
+        message: replyText,
+        hasText: true,
+        hasImage: false,
+        isResolved: false,
+        timestamp: new Date()
+      });
+
+      await replyMessage.save();
+
+      // Notify user about reply
+      if (userId) {
+        io.to(`user_${userId}`).emit('admin-reply', {
+          messageId,
+          replyId: replyMessage._id,
+          replyText,
+          timestamp: replyMessage.timestamp
+        });
+      }
+
+      // Notify admin room
+      io.to('admin-messages').emit('message-updated', {
+        messageId,
+        status: 'replied',
+        repliedAt: message.replyTime
+      });
+
+      console.log('[Socket.IO] Admin reply sent and broadcasted');
+    } catch (error) {
+      console.error('[Socket.IO] Error handling send-reply:', error.message);
+      socket.emit('reply-error', { message: 'Failed to send reply', error: error.message });
+    }
+  });
+
+  // Admin marks message as resolved
+  socket.on('resolve-message', async (data) => {
+    try {
+      const { messageId } = data;
+
+      await ChatMessage.findByIdAndUpdate(
+        messageId,
+        { isResolved: true, updatedAt: new Date() },
+        { new: true }
+      );
+
+      io.to('admin-messages').emit('message-resolved', { messageId });
+      console.log('[Socket.IO] Message marked as resolved:', messageId);
+    } catch (error) {
+      console.error('[Socket.IO] Error resolving message:', error.message);
     }
   });
 
