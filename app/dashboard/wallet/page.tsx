@@ -18,12 +18,17 @@ interface WalletBalance {
 
 interface Transaction {
   id: string;
-  type: 'deposit' | 'withdrawal' | 'purchase';
+  type: 'deposit' | 'withdrawal' | 'purchase' | 'return' | 'returns' | 'daily_trade_return' | 'activity_reward' | 'giveaway_sent' | 'giveaway_received' | 'referral_commission' | 'powaup_sent' | 'powaup_received' | 'bonus' | 'gift';
   amount: number;
   currency: string;
   date: string;
-  status: 'completed' | 'pending' | 'failed';
+  status: 'completed' | 'pending' | 'failed' | 'confirmed' | 'processing' | 'cancelled';
   address?: string;
+  description?: string;
+  withdrawalFee?: number;
+  amountToPay?: number;
+  completedAt?: string;
+  paidOutAt?: string;
 }
 
 export default function WalletPage() {
