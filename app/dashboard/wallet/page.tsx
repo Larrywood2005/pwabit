@@ -22,6 +22,8 @@ interface Transaction {
   amount: number;
   currency: string;
   date: string;
+  createdAt?: string;
+  timestamp?: string;
   status: 'completed' | 'pending' | 'failed' | 'confirmed' | 'processing' | 'cancelled';
   address?: string;
   description?: string;
