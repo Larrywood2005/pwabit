@@ -2123,45 +2123,106 @@ router.get('/chat-messages', authenticate, authorize(['super_admin', 'admin']), 
     const { page = 1, limit = 50, unreadOnly = false } = req.query;
     const skip = (page - 1) * limit;
 
-    console.log('[v0] Admin fetching chat messages:', { page, limit, unreadOnly });
+    console.log('[v0] Chat Messages Endpoint - Request received:', {
+      page,
+      limit,
+      unreadOnly,
+      authenticatedUser: req.user?._id || req.user?.userId,
+      timestamp: new Date().toISOString()
+    });
 
-    // Query for messages
+    // Validate inputs
+    if (isNaN(page) || isNaN(limit)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid pagination parameters'
+      });
+    }
+
+    // Build query
     let query = {};
     if (unreadOnly === 'true') {
       query.isResolved = false;
     }
 
-    // Fetch messages with proper error handling
-    const messages = await ChatMessage.find(query)
-      .populate('userId', 'fullName email userCode')
-      .populate('repliedBy', 'fullName email')
-      .sort({ timestamp: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .lean();
+    console.log('[v0] Chat Messages Query:', { query, skip, limit });
 
-    const total = await ChatMessage.countDocuments(query);
+    // Verify ChatMessage model exists
+    if (!ChatMessage || typeof ChatMessage.find !== 'function') {
+      console.error('[v0] ChatMessage model is invalid:', typeof ChatMessage);
+      return res.status(500).json({
+        success: false,
+        message: 'Database model error',
+        error: 'ChatMessage model not properly initialized'
+      });
+    }
 
-    console.log('[v0] Chat messages fetched successfully:', {
-      count: messages.length,
+    // Fetch messages with error details
+    let messages;
+    try {
+      messages = await ChatMessage.find(query)
+        .populate('userId', 'fullName email userCode')
+        .populate('repliedBy', 'fullName email')
+        .sort({ timestamp: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean()
+        .exec();
+      
+      console.log('[v0] Chat Messages fetched:', { count: messages?.length || 0 });
+    } catch (queryError) {
+      console.error('[v0] Mongoose query error:', {
+        message: queryError.message,
+        stack: queryError.stack,
+        query
+      });
+      throw queryError;
+    }
+
+    // Count total
+    let total;
+    try {
+      total = await ChatMessage.countDocuments(query);
+      console.log('[v0] Total chat messages count:', total);
+    } catch (countError) {
+      console.error('[v0] Count error:', {
+        message: countError.message,
+        stack: countError.stack
+      });
+      throw countError;
+    }
+
+    // Calculate pages
+    const pages = Math.ceil(total / limit);
+
+    console.log('[v0] Chat Messages Response:', {
+      count: messages?.length || 0,
       total,
-      page,
-      limit
+      pages,
+      currentPage: parseInt(page)
     });
 
     res.json({
       success: true,
-      messages,
+      messages: messages || [],
       total,
-      pages: Math.ceil(total / limit),
+      pages,
       currentPage: parseInt(page)
     });
+
   } catch (error) {
-    console.error('[v0] Error fetching chat messages:', error);
+    console.error('[v0] CRITICAL ERROR in /chat-messages endpoint:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+      name: error.name
+    });
+
     res.status(500).json({
       success: false,
       message: 'Failed to fetch chat messages',
-      error: error.message
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -2169,23 +2230,41 @@ router.get('/chat-messages', authenticate, authorize(['super_admin', 'admin']), 
 // Get single chat message
 router.get('/chat-messages/:messageId', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
   try {
-    const message = await ChatMessage.findById(req.params.messageId)
+    const { messageId } = req.params;
+    
+    console.log('[v0] Fetching single message:', { messageId });
+
+    if (!messageId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message ID is required'
+      });
+    }
+
+    const message = await ChatMessage.findById(messageId)
       .populate('userId', 'fullName email userCode')
       .populate('repliedBy', 'fullName email');
 
     if (!message) {
+      console.log('[v0] Message not found:', messageId);
       return res.status(404).json({
         success: false,
         message: 'Message not found'
       });
     }
 
+    console.log('[v0] Message retrieved:', { messageId, sender: message.sender });
+
     res.json({
       success: true,
       message
     });
   } catch (error) {
-    console.error('[v0] Error fetching message:', error);
+    console.error('[v0] Error fetching message:', {
+      messageId: req.params.messageId,
+      message: error.message,
+      stack: error.stack
+    });
     res.status(500).json({
       success: false,
       message: 'Failed to fetch message',
@@ -2197,17 +2276,34 @@ router.get('/chat-messages/:messageId', authenticate, authorize(['super_admin', 
 // Update chat message status (mark as resolved, reply, etc.)
 router.put('/chat-messages/:messageId', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
   try {
+    const { messageId } = req.params;
     const { isResolved, reply } = req.body;
-    const adminId = req.user._id || req.user.userId || req.user.id;
+    const adminId = req.user?._id || req.user?.userId || req.user?.id;
 
     console.log('[v0] Admin updating message:', {
-      messageId: req.params.messageId,
+      messageId,
       adminId,
       isResolved,
-      hasReply: !!reply
+      hasReply: !!reply,
+      requestUser: req.user
     });
 
-    // Find and update message
+    if (!messageId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Message ID is required'
+      });
+    }
+
+    if (!adminId) {
+      console.error('[v0] Admin ID not found in request');
+      return res.status(401).json({
+        success: false,
+        message: 'Admin identification failed'
+      });
+    }
+
+    // Build update data
     const updateData = {
       updatedAt: new Date()
     };
@@ -2216,26 +2312,36 @@ router.put('/chat-messages/:messageId', authenticate, authorize(['super_admin', 
       updateData.isResolved = isResolved;
     }
 
-    if (reply) {
+    if (reply && reply.trim()) {
       updateData.repliedBy = adminId;
       updateData.replyTime = new Date();
       updateData.isResolved = true;
     }
 
+    console.log('[v0] Update data:', updateData);
+
+    // Find and update
     const message = await ChatMessage.findByIdAndUpdate(
-      req.params.messageId,
+      messageId,
       updateData,
-      { new: true }
+      { new: true, runValidators: true }
     )
       .populate('userId', 'fullName email')
       .populate('repliedBy', 'fullName email');
 
     if (!message) {
+      console.log('[v0] Message not found for update:', messageId);
       return res.status(404).json({
         success: false,
         message: 'Message not found'
       });
     }
+
+    console.log('[v0] Message updated successfully:', {
+      messageId: message._id,
+      isResolved: message.isResolved,
+      repliedBy: message.repliedBy?._id
+    });
 
     // Emit socket event if available
     if (router.io && reply) {
@@ -2252,11 +2358,17 @@ router.put('/chat-messages/:messageId', authenticate, authorize(['super_admin', 
       updated: true
     });
   } catch (error) {
-    console.error('[v0] Error updating message:', error);
+    console.error('[v0] Error updating message:', {
+      messageId: req.params.messageId,
+      message: error.message,
+      stack: error.stack,
+      error: error
+    });
     res.status(500).json({
       success: false,
       message: 'Failed to update message',
-      error: error.message
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
