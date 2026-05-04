@@ -251,9 +251,13 @@ app.use('/api/giveaway', giveawayRoutes);
 
 // Start real-time services
 import { startPriceUpdates } from './services/cryptoService.js';
-import { startDailyReturnsScheduler } from './services/returnsService.js';
+import { startDailyReturnsScheduler, setIOInstance } from './services/returnsService.js';
 
 startPriceUpdates();
+
+// Initialize Socket.io for returnsService before starting scheduler
+setIOInstance(io);
+
 startDailyReturnsScheduler();
 
 // Error handling middleware

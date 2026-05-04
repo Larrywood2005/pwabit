@@ -6,6 +6,17 @@ import transactionLogger from './transactionLogger.js';
 // Global flag to prevent multiple scheduler instances
 let schedulerInitialized = false;
 
+// Global io instance for Socket.io emissions
+let ioInstance = null;
+
+/**
+ * Set Socket.io instance for real-time event emissions
+ */
+export const setIOInstance = (io) => {
+  ioInstance = io;
+  console.log('[ReturnsService] Socket.io instance set for real-time ROI emissions');
+};
+
 /**
  * CRITICAL FIX: Process daily returns with atomic locking and strict 24h validation
  * Uses UTC consistently to prevent timezone-related duplicate payouts
@@ -212,6 +223,24 @@ export const calculateDailyReturns = async () => {
         console.log(`[ROI CHECK]   Credit: $${dailyReturn.toFixed(2)}`);
         console.log(`[ROI CHECK]   Balance before: $${balanceBefore.toFixed(2)}`);
         console.log(`[ROI CHECK]   Balance after: $${user.currentBalance.toFixed(2)}`);
+
+        // Emit Socket.io event for real-time transaction update
+        if (ioInstance && investment.userId) {
+          try {
+            ioInstance.to(`user_${investment.userId.toString()}`).emit('daily-trade-return', {
+              id: transaction._id?.toString() || `return-${Date.now()}`,
+              amount: dailyReturn,
+              dailyReturnPercent: investment.dailyReturnPercent,
+              cycleNumber: investment.returnHistory?.length || 1,
+              type: 'daily_trade_return',
+              status: 'completed',
+              timestamp: new Date()
+            });
+            console.log(`[ROI CHECK] ✓ Socket.io event emitted for user: ${investment.userId}`);
+          } catch (socketErr) {
+            console.error(`[ROI CHECK] Socket.io emit error:`, socketErr.message);
+          }
+        }
 
         console.log(`[ROI CHECK] ✓ ROI CREDITED SUCCESSFULLY`);
         console.log(`[ROI CHECK] ✓ Next cycle eligible: ${investment.nextReturnDate.toISOString()}`);

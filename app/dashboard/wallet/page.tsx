@@ -41,6 +41,7 @@ export default function WalletPage() {
     try {
       setLoading(true);
       setError('');
+      console.log('[v0] Starting wallet fetch...');
 
       // Get auth token from localStorage
       const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
@@ -54,6 +55,7 @@ export default function WalletPage() {
 
         if (response.ok) {
           const balanceData = await response.json();
+          console.log('[v0] Balance data:', balanceData);
           // SINGLE SOURCE OF TRUTH: Display ONLY availableBalance as "Your Available Funds"
           setBalances([
             { 
@@ -79,35 +81,48 @@ export default function WalletPage() {
 
       // Fetch wallet transactions - FIXED: Always get latest 6, combined from all types
       try {
+        console.log('[v0] Fetching wallet transactions...');
         const txData = await apiClient.getWalletTransactions(1, 6);
-        console.log('[v0] Raw transaction data received:', txData);
+        console.log('[v0] Raw transaction API response:', txData);
         
         if (txData && typeof txData === 'object') {
-          let transactionsArray = Array.isArray(txData) ? txData : (txData.data && Array.isArray(txData.data)) ? txData.data : [];
+          let transactionsArray = [];
           
-          if (transactionsArray.length === 0) {
-            // Try alternative data structure
-            transactionsArray = txData.transactions || txData.history || [];
+          // Check multiple possible response structures
+          if (Array.isArray(txData)) {
+            transactionsArray = txData;
+            console.log('[v0] Response is direct array');
+          } else if (txData.data && Array.isArray(txData.data)) {
+            transactionsArray = txData.data;
+            console.log('[v0] Response has .data array');
+          } else if (txData.transactions && Array.isArray(txData.transactions)) {
+            transactionsArray = txData.transactions;
+            console.log('[v0] Response has .transactions array');
+          } else if (txData.history && Array.isArray(txData.history)) {
+            transactionsArray = txData.history;
+            console.log('[v0] Response has .history array');
           }
           
-          console.log('[v0] Transactions array:', transactionsArray);
+          console.log('[v0] Transaction array found:', transactionsArray.length, 'items');
           
           if (transactionsArray.length > 0) {
             // Sort by date descending (latest first)
             const sorted = transactionsArray.sort((a: any, b: any) => {
               const dateA = new Date(b.date || b.createdAt || b.timestamp || Date.now()).getTime();
               const dateB = new Date(a.date || a.createdAt || a.timestamp || Date.now()).getTime();
+              console.log('[v0] Sorting - A:', dateA, 'B:', dateB);
               return dateA - dateB;
             });
             // Limit to 6 latest
-            setTransactions(sorted.slice(0, 6));
-            console.log('[v0] Set transactions:', sorted.slice(0, 6));
+            const limited = sorted.slice(0, 6);
+            setTransactions(limited);
+            console.log('[v0] ✓ Transactions set:', limited.length, 'items');
           } else {
-            console.log('[v0] No transactions found, setting empty array');
+            console.log('[v0] No transactions in array, setting empty');
             setTransactions([]);
           }
         } else {
-          console.log('[v0] Invalid transaction data format:', txData);
+          console.log('[v0] Invalid transaction response format:', typeof txData, txData);
           setTransactions([]);
         }
       } catch (txErr) {
@@ -119,6 +134,7 @@ export default function WalletPage() {
       setError('Some wallet data may not be available, but showing cached data.');
     } finally {
       setLoading(false);
+      console.log('[v0] Wallet fetch complete');
     }
   };
 
@@ -247,6 +263,85 @@ export default function WalletPage() {
               currency: 'USD',
               date: new Date().toISOString(),
               status: 'completed'
+            };
+            setTransactions(prev => [newTx, ...prev.slice(0, 5)]);
+          }
+        });
+
+        // Listen for ROI returns (daily returns, investment returns)
+        socketRef.current.on('roi-paid', (data: any) => {
+          if (mounted) {
+            const newTx: Transaction = {
+              id: data.id || `tx-${Date.now()}`,
+              type: 'returns',
+              amount: data.amount,
+              currency: 'USD',
+              date: new Date().toISOString(),
+              status: 'completed',
+              description: `Daily ROI Return - ${data.dailyReturnPercent}%`
+            };
+            setTransactions(prev => [newTx, ...prev.slice(0, 5)]);
+          }
+        });
+
+        // Listen for daily trade returns
+        socketRef.current.on('daily-trade-return', (data: any) => {
+          if (mounted) {
+            const newTx: Transaction = {
+              id: data.id || `tx-${Date.now()}`,
+              type: 'daily_trade_return',
+              amount: data.amount,
+              currency: 'USD',
+              date: new Date().toISOString(),
+              status: 'completed',
+              description: `Daily Trade ROI - Cycle ${data.cycleNumber || 1}`
+            };
+            setTransactions(prev => [newTx, ...prev.slice(0, 5)]);
+          }
+        });
+
+        // Listen for giveaway transfers
+        socketRef.current.on('giveaway-sent', (data: any) => {
+          if (mounted) {
+            const newTx: Transaction = {
+              id: data.id || `tx-${Date.now()}`,
+              type: 'giveaway_sent',
+              amount: data.amount,
+              currency: 'USD',
+              date: new Date().toISOString(),
+              status: 'completed',
+              description: `Sent to ${data.receiverUserCode || 'User'}`
+            };
+            setTransactions(prev => [newTx, ...prev.slice(0, 5)]);
+          }
+        });
+
+        socketRef.current.on('giveaway-received', (data: any) => {
+          if (mounted) {
+            const newTx: Transaction = {
+              id: data.id || `tx-${Date.now()}`,
+              type: 'giveaway_received',
+              amount: data.amount,
+              currency: 'USD',
+              date: new Date().toISOString(),
+              status: 'completed',
+              description: `Received from ${data.senderUserCode || 'User'}`
+            };
+            setTransactions(prev => [newTx, ...prev.slice(0, 5)]);
+          }
+        });
+
+        // Listen for generic transaction updates (fallback)
+        socketRef.current.on('transaction-created', (data: any) => {
+          if (mounted) {
+            const newTx: Transaction = {
+              id: data.id || `tx-${Date.now()}`,
+              type: data.type || 'deposit',
+              amount: data.amount || 0,
+              currency: data.currency || 'USD',
+              date: new Date().toISOString(),
+              status: data.status || 'completed',
+              description: data.description
             };
             setTransactions(prev => [newTx, ...prev.slice(0, 5)]);
           }
@@ -386,51 +481,103 @@ export default function WalletPage() {
 
               {transactions.length > 0 ? (
                 <div className='divide-y divide-border'>
-                  {transactions.map((tx) => (
-                    <div key={tx.id} className='p-6 hover:bg-muted/50 transition-colors'>
-                      <div className='flex items-center justify-between'>
-                        <div className='flex items-center gap-4'>
-                          <div className={`p-3 rounded-lg ${
-                            tx.type === 'deposit'
-                              ? 'bg-green-500/20'
-                              : tx.type === 'purchase'
-                              ? 'bg-blue-500/20'
-                              : 'bg-red-500/20'
-                          }`}>
-                            {tx.type === 'deposit' ? (
-                              <ArrowDownLeft className='text-green-600' size={20} />
-                            ) : tx.type === 'purchase' ? (
-                              <Plus className='text-blue-600' size={20} />
-                            ) : (
-                              <ArrowUpRight className='text-red-600' size={20} />
+                  {transactions.map((tx) => {
+                    // Determine if transaction is incoming or outgoing
+                    const incomingTypes = [
+                      'deposit', 
+                      'return', 
+                      'returns', 
+                      'daily_trade_return',
+                      'activity_reward',
+                      'giveaway_received',
+                      'referral_commission',
+                      'powaup_received'
+                    ];
+                    const isIncoming = incomingTypes.includes(tx.type);
+
+                    // Get transaction label
+                    const getLabel = (type: string) => {
+                      const labels: Record<string, string> = {
+                        'deposit': 'Deposit',
+                        'withdrawal': 'Withdrawal',
+                        'return': 'ROI Return',
+                        'returns': 'ROI Return',
+                        'daily_trade_return': 'Daily ROI',
+                        'activity_reward': 'Activity Reward',
+                        'giveaway_sent': 'Giveaway Sent',
+                        'giveaway_received': 'Giveaway Received',
+                        'referral_commission': 'Referral Commission',
+                        'powaup_sent': 'PowaUp Sent',
+                        'powaup_received': 'PowaUp Received',
+                        'purchase': 'Purchase'
+                      };
+                      return labels[type] || type.charAt(0).toUpperCase() + type.slice(1);
+                    };
+
+                    // Get icon and background color based on type
+                    const getIconColor = (type: string) => {
+                      if (['deposit', 'return', 'returns', 'daily_trade_return', 'activity_reward', 'giveaway_received', 'referral_commission', 'powaup_received'].includes(type)) {
+                        return { bg: 'bg-green-500/20', color: 'text-green-600', icon: 'in' };
+                      } else if (type === 'purchase' || type === 'powaup_sent') {
+                        return { bg: 'bg-blue-500/20', color: 'text-blue-600', icon: 'plus' };
+                      } else {
+                        return { bg: 'bg-red-500/20', color: 'text-red-600', icon: 'out' };
+                      }
+                    };
+
+                    const iconInfo = getIconColor(tx.type);
+
+                    return (
+                      <div key={tx.id} className='p-6 hover:bg-muted/50 transition-colors'>
+                        <div className='flex items-center justify-between'>
+                          <div className='flex items-center gap-4'>
+                            <div className={`p-3 rounded-lg ${iconInfo.bg}`}>
+                              {iconInfo.icon === 'in' && (
+                                <ArrowDownLeft className={iconInfo.color} size={20} />
+                              )}
+                              {iconInfo.icon === 'plus' && (
+                                <Plus className={iconInfo.color} size={20} />
+                              )}
+                              {iconInfo.icon === 'out' && (
+                                <ArrowUpRight className={iconInfo.color} size={20} />
+                              )}
+                            </div>
+                            <div>
+                              <p className='font-semibold text-foreground'>{getLabel(tx.type)}</p>
+                              <p className='text-xs text-muted-foreground'>
+                                {(() => {
+                                  const date = new Date(tx.date || tx.createdAt || Date.now());
+                                  return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                                })()}
+                              </p>
+                              {tx.description && (
+                                <p className='text-xs text-muted-foreground mt-1'>{tx.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className='text-right'>
+                            <p className={`font-bold ${isIncoming ? 'text-green-600' : 'text-red-600'}`}>
+                              {isIncoming ? '+' : '-'}${(tx.amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </p>
+                            <span className={`text-xs px-2 py-1 rounded-full inline-block mt-1 capitalize ${
+                              tx.status === 'completed' || tx.status === 'confirmed'
+                                ? 'bg-green-500/20 text-green-600'
+                                : tx.status === 'pending' || tx.status === 'processing'
+                                ? 'bg-yellow-500/20 text-yellow-600'
+                                : 'bg-red-500/20 text-red-600'
+                            }`}>
+                              {tx.status}
+                            </span>
+                            {tx.withdrawalFee > 0 && (
+                              <p className='text-xs text-muted-foreground mt-2'>
+                                Fee: -${(tx.withdrawalFee || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                              </p>
                             )}
                           </div>
-                          <div>
-                            <p className='font-semibold text-foreground capitalize'>{tx.type}</p>
-                            <p className='text-xs text-muted-foreground'>{new Date(tx.date).toLocaleDateString()} {new Date(tx.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                          </div>
-                        </div>
-                        <div className='text-right'>
-                          <p className={`font-bold ${
-                            tx.type === 'deposit'
-                              ? 'text-green-600'
-                              : 'text-red-600'
-                          }`}>
-                            {tx.type === 'deposit' ? '+' : '-'}${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </p>
-                          <span className={`text-xs px-2 py-1 rounded-full inline-block ${
-                            tx.status === 'completed'
-                              ? 'bg-green-500/20 text-green-600'
-                              : tx.status === 'pending'
-                              ? 'bg-yellow-500/20 text-yellow-600'
-                              : 'bg-red-500/20 text-red-600'
-                          }`}>
-                            {tx.status}
-                          </span>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className='p-6 text-center'>

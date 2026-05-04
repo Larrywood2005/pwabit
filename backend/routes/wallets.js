@@ -148,62 +148,99 @@ router.get('/balances', authenticate, async (req, res) => {
 router.get('/transactions', authenticate, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 6;
     const skip = (page - 1) * limit;
     
-    const wallet = await Wallet.findOne({ userId: req.user.userId });
+    console.log('[TRANSACTIONS] Fetching for user:', req.user.userId, 'Page:', page, 'Limit:', limit);
     
-    if (!wallet) {
-      console.log('[v0] No wallet found for user:', req.user.userId);
-      return res.json({
-        data: [],
-        pagination: { page, limit, total: 0 }
-      });
-    }
+    // MAIN FIX: Fetch from Transaction collection (TRUE SOURCE OF TRUTH)
+    // Include all transaction types: withdrawals, deposits, returns, giveaways
+    const transactions = await Transaction.find({
+      userId: req.user.userId,
+      type: { 
+        $in: [
+          'deposit', 
+          'withdrawal', 
+          'return', 
+          'returns',
+          'daily_trade_return',
+          'activity_reward', 
+          'giveaway_sent', 
+          'giveaway_received',
+          'referral_commission',
+          'powaup_sent',
+          'powaup_received'
+        ] 
+      }
+    })
+    .sort({ createdAt: -1 })  // Latest first
+    .limit(limit)
+    .skip(skip)
+    .lean();
+
+    console.log('[TRANSACTIONS] Found', transactions.length, 'transactions');
     
-    console.log('[v0] Wallet found. Pending deposits:', wallet.pendingDeposits.length, 'Withdrawals:', wallet.withdrawalHistory.length);
-    
-    // Combine pending deposits and withdrawal history with CONSISTENT date field
-    const allTransactions = [
-      ...wallet.pendingDeposits.map(tx => ({ 
-        id: tx._id || tx.transactionHash || `deposit-${Date.now()}`,
-        type: 'deposit',
-        currency: tx.currency || 'USD',
-        amount: tx.amount || 0,
-        status: 'pending',
-        transactionHash: tx.transactionHash,
-        date: tx.createdAt || new Date(),  // Use consistent 'date' field
-        timestamp: tx.createdAt || new Date()
-      })),
-      ...wallet.withdrawalHistory.map(tx => ({ 
-        id: tx._id || tx.transactionHash || `withdrawal-${Date.now()}`,
-        ...tx.toObject(),
-        type: 'withdrawal',
-        date: tx.timestamp || tx.createdAt || new Date(),  // Use consistent 'date' field
-      }))
-    ].sort((a, b) => {
-      const dateA = new Date(b.date || b.timestamp || 0).getTime();
-      const dateB = new Date(a.date || a.timestamp || 0).getTime();
-      return dateA - dateB;
+    // Get total count for pagination
+    const total = await Transaction.countDocuments({
+      userId: req.user.userId,
+      type: { 
+        $in: [
+          'deposit', 
+          'withdrawal', 
+          'return', 
+          'returns',
+          'daily_trade_return',
+          'activity_reward', 
+          'giveaway_sent', 
+          'giveaway_received',
+          'referral_commission',
+          'powaup_sent',
+          'powaup_received'
+        ] 
+      }
     });
+
+    console.log('[TRANSACTIONS] Total available:', total);
     
-    const total = allTransactions.length;
-    const transactions = allTransactions.slice(skip, skip + limit);
-    
-    console.log('[v0] Returning', transactions.length, 'transactions for page', page, 'total:', total);
+    // Map transactions to consistent format for frontend
+    const formattedTransactions = transactions.map(tx => ({
+      id: tx._id?.toString() || tx.transactionHash || `tx-${Date.now()}`,
+      type: tx.type,
+      amount: tx.amount || 0,
+      currency: tx.currency || 'USD',
+      status: tx.status || 'pending',
+      date: tx.createdAt || new Date(),
+      description: tx.description,
+      transactionHash: tx.transactionHash,
+      investmentId: tx.investmentId,
+      details: tx.details,
+      withdrawalFee: tx.withdrawalFee,
+      amountToPay: tx.amountToPay,
+      completedAt: tx.completedAt,
+      paidOutAt: tx.paidOutAt
+    }));
     
     res.json({
-      data: transactions,
+      data: formattedTransactions,
       pagination: {
         page,
         limit,
         total,
         pages: Math.ceil(total / limit)
+      },
+      debug: {
+        timestamp: new Date(),
+        message: `Returning ${formattedTransactions.length} of ${total} transactions`
       }
     });
   } catch (error) {
-    console.error('[v0] Error fetching transactions:', error);
-    res.status(500).json({ message: 'Failed to fetch transactions', error: error.message });
+    console.error('[TRANSACTIONS] Error fetching transactions:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch transactions', 
+      error: error.message,
+      data: [],
+      pagination: { page: 1, limit: 6, total: 0 }
+    });
   }
 });
 
