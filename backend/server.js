@@ -18,7 +18,9 @@ const allowedOrigins = [
   'http://localhost:5173',
   'https://powabitz.com',
   'https://www.powabitz.com',
-  'https://pwabit-ckeb.vercel.app'
+  'https://pwabit-ckeb.vercel.app',
+  'https://pwabit.onrender.com',
+  'https://powabitz.onrender.com'
 ];
 
 // Initialize Express app
@@ -64,7 +66,13 @@ import ChatMessage from './models/ChatMessage.js';
 
 // Socket.io connection handling with detailed logging
 io.on('connection', (socket) => {
-  console.log('[Socket.IO] Client connected:', socket.id, 'Transport:', socket.conn.transport.name);
+  const transportName = socket.conn?.transport?.name || 'unknown';
+  console.log('[Socket.IO] Client connected:', {
+    socketId: socket.id,
+    transport: transportName,
+    remoteAddress: socket.conn?.remoteAddress,
+    timestamp: new Date().toISOString()
+  });
 
   // Join user-specific room for targeted updates
   socket.on('join', (userId) => {
@@ -237,11 +245,11 @@ io.on('connection', (socket) => {
   });
 
   socket.conn.on('upgrade', (transport) => {
-    console.log('[Socket.IO] Transport upgraded to:', transport.name, 'Socket:', socket.id);
+    console.log('[Socket.IO] Transport upgraded for socket', socket.id, 'to:', transport.name);
   });
 
   socket.conn.on('error', (error) => {
-    console.error('[Socket.IO] Connection error:', socket.id, error.message);
+    console.error('[Socket.IO] Connection error for socket', socket.id, ':', error.message || error);
   });
 });
 
@@ -301,11 +309,6 @@ app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date() });
-});
 
 // WebSocket for real-time crypto prices
 wss.on('connection', (ws) => {

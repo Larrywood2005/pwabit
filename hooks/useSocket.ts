@@ -38,9 +38,8 @@ const isSocketEnabled = () => {
   
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   
-  // Only enable socket if we have a valid backend URL configured
-  // Disable socket for local development to prevent connection errors
-  if (!apiUrl || apiUrl === 'http://localhost:5000/api') {
+  // Enable socket if we have a valid backend URL configured
+  if (!apiUrl) {
     return false;
   }
   
