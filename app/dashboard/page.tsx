@@ -545,12 +545,17 @@ export default function DashboardPage() {
                 <button
                   onClick={async () => {
                     try {
+                      console.log('[v0] Daily bonus claim started...');
                       const reward = await apiClient.claimDailyLoginReward();
+                      console.log('[v0] Daily bonus reward received:', reward);
                       const earnedAmount = reward?.reward?.amount || reward?.amount || 0.03;
+                      console.log('[v0] Setting bonus amount:', earnedAmount);
                       setBonusAmount(earnedAmount);
+                      console.log('[v0] Setting showBonusModal to TRUE');
                       setShowBonusModal(true);
                       setBalance(prev => prev + earnedAmount);
                     } catch (err: any) {
+                      console.error('[v0] Daily bonus error:', err);
                       const errorMsg = err instanceof Error ? err.message : (err?.message || 'You have already claimed today');
                       setError(errorMsg);
                       setTimeout(() => setError(''), 5000);

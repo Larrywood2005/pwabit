@@ -164,7 +164,9 @@ export default function PuzzleGame({ onRewardClaimed }: PuzzleGameProps) {
       console.log('[v0] Reward claimed successfully:', reward);
       
       const amount = reward?.reward?.amount || reward?.amount || 0.03;
+      console.log('[v0] Setting reward amount:', amount);
       setRewardAmount(amount);
+      console.log('[v0] Setting showSuccessModal to TRUE');
       setShowSuccessModal(true);
       
       onRewardClaimed?.(amount);

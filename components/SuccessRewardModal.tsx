@@ -20,6 +20,7 @@ export default function SuccessRewardModal({
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    console.log('[v0-SuccessRewardModal] isOpen changed to:', isOpen);
     setIsVisible(isOpen);
   }, [isOpen]);
 
@@ -30,7 +31,12 @@ export default function SuccessRewardModal({
     }, 200);
   };
 
-  if (!isOpen && !isVisible) return null;
+  if (!isOpen && !isVisible) {
+    console.log('[v0-SuccessRewardModal] Returning null - isOpen:', isOpen, 'isVisible:', isVisible);
+    return null;
+  }
+
+  console.log('[v0-SuccessRewardModal] Rendering modal - isOpen:', isOpen, 'isVisible:', isVisible, 'rewardType:', rewardType);
 
   const getRewardMessage = () => {
     switch (rewardType) {
