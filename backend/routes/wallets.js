@@ -427,6 +427,7 @@ function getActivityStatus(status) {
     'credited-pending': 'pending'
   };
   return statusMap[status] || 'pending';
+}
 
 router.get('/me', authenticate, async (req, res) => {
   try {
