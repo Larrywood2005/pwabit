@@ -82,7 +82,7 @@ export default function ReferralPage() {
   };
 
   const shareOnSocial = (platform: string) => {
-    const message = `Join me on Powabitz and earn 3% daily returns! Use my referral code ${referralCode}`;
+    const message = `Join me on Powabitz and earn 3.7% daily returns! Use my referral code ${referralCode}`;
     const encodedMessage = encodeURIComponent(message);
     
     const shareUrls: { [key: string]: string } = {

@@ -250,7 +250,7 @@ router.get('/users/:id', authenticate, authorize(['super_admin', 'admin']), asyn
         packageId: inv.packageId,
         status: inv.status,
         cryptoType: inv.cryptoType,
-        dailyReturnPercent: inv.dailyReturnPercent || 3,
+        dailyReturnPercent: inv.dailyReturnPercent || 3.7,
         activatedAt: inv.activatedAt,
         maturityDate: inv.maturityDate,
         totalReturnsEarned: inv.totalReturnsEarned || 0,

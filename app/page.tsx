@@ -21,7 +21,7 @@ export default function Home() {
               <h1 className='text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-4 text-balance'>
                 Grow Your Crypto{' '}
                 <span className='bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent'>
-                  3% Daily
+                  3.7% Daily
                 </span>
               </h1>
               <p className='text-lg text-muted-foreground max-w-xl text-balance'>
@@ -58,7 +58,7 @@ export default function Home() {
                 <div className='text-sm text-muted-foreground'>Active Investors</div>
               </div>
               <div className='flex flex-col gap-1'>
-                <div className='text-2xl font-bold text-accent'>3%</div>
+                <div className='text-2xl font-bold text-accent'>3.7%</div>
                 <div className='text-sm text-muted-foreground'>Daily Returns</div>
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function Home() {
             </div>
             <h3 className='text-xl font-bold text-foreground mb-2'>Daily Compound Returns</h3>
             <p className='text-muted-foreground'>
-              Earn guaranteed 3% daily returns that automatically compound with your existing
+              Earn guaranteed 3.7% daily returns that automatically compound with your existing
               investments.
             </p>
           </div>
@@ -199,7 +199,7 @@ export default function Home() {
             <div className='space-y-3 mb-8 flex-grow'>
               <div className='flex items-center gap-2 text-foreground'>
                 <div className='w-1.5 h-1.5 rounded-full bg-primary'></div>
-                3% Daily Returns
+                3.7% Daily Returns
               </div>
               <div className='flex items-center gap-2 text-foreground'>
                 <div className='w-1.5 h-1.5 rounded-full bg-primary'></div>
@@ -231,7 +231,7 @@ export default function Home() {
             <div className='space-y-3 mb-8 flex-grow'>
               <div className='flex items-center gap-2 text-foreground'>
                 <div className='w-1.5 h-1.5 rounded-full bg-secondary'></div>
-                3% Daily Returns
+                3.7% Daily Returns
               </div>
               <div className='flex items-center gap-2 text-foreground'>
                 <div className='w-1.5 h-1.5 rounded-full bg-secondary'></div>
@@ -264,7 +264,7 @@ export default function Home() {
             <div className='space-y-3 mb-8 flex-grow'>
               <div className='flex items-center gap-2 text-foreground'>
                 <div className='w-1.5 h-1.5 rounded-full bg-accent'></div>
-                3% Daily Returns
+                3.7% Daily Returns
               </div>
               <div className='flex items-center gap-2 text-foreground'>
                 <div className='w-1.5 h-1.5 rounded-full bg-accent'></div>

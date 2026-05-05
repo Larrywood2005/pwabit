@@ -44,6 +44,7 @@ const DEPOSIT_WALLETS: WalletInfo = {
   }
 };
 
+
 export default function NewInvestmentPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -66,9 +67,9 @@ export default function NewInvestmentPage() {
       name: 'Starter Package',
       min: 10,
       max: 999,
-      dailyReturn: 3,
+      dailyReturn: 3.7,
       features: [
-        '3% daily returns',
+        '3.7% daily returns',
         'Compound interest',
         'Trade after 24 hours',
         'Basic support',
@@ -81,10 +82,10 @@ export default function NewInvestmentPage() {
       name: 'Premium Package',
       min: 1000,
       max: 4999,
-      dailyReturn: 3,
+      dailyReturn: 3.7,
       popular: true,
       features: [
-        '3% daily returns',
+        '3.7% daily returns',
         'Compound interest',
         'Trade after 24 hours',
         'Priority support',
@@ -99,9 +100,9 @@ export default function NewInvestmentPage() {
       name: 'Elite Package',
       min: 5000,
       max: null,
-      dailyReturn: 3,
+      dailyReturn: 3.7,
       features: [
-        '3% daily returns',
+        '3.7% daily returns',
         'Compound interest',
         'Trade after 24 hours',
         'VIP support 24/7',
@@ -541,7 +542,7 @@ export default function NewInvestmentPage() {
             
             <div className='space-y-4'>
               <div className='p-4 rounded-lg border border-border'>
-                <p className='text-sm text-muted-foreground mb-2'>Network: USDT BEP20(Binance Smart Chain)</p>
+                <p className='text-sm text-muted-foreground mb-2'>USDT BEP20(Binance Smart Chain)</p>
                 <div className='flex items-center gap-2'>
                   <code className='flex-1 p-2 rounded bg-background text-xs font-mono break-all text-foreground'>
                     {DEPOSIT_WALLETS.usdtBep20?.address}
@@ -556,7 +557,7 @@ export default function NewInvestmentPage() {
               </div>
 
               <div className='p-4 rounded-lg border border-border'>
-                <p className='text-sm text-muted-foreground mb-2'>Network: USTD ERC20 (Ethereum)</p>
+                <p className='text-sm text-muted-foreground mb-2'>Network: ERC20 (Ethereum)</p>
                 <div className='flex items-center gap-2'>
                   <code className='flex-1 p-2 rounded bg-background text-xs font-mono break-all text-foreground'>
                     {DEPOSIT_WALLETS.ustdERC20?.address}
@@ -571,7 +572,7 @@ export default function NewInvestmentPage() {
               </div>
 
               <div className='p-4 rounded-lg border border-border'>
-                <p className='text-sm text-muted-foreground mb-2'>Network: USTD SOL</p>
+                <p className='text-sm text-muted-foreground mb-2'>Network: SOL</p>
                 <div className='flex items-center gap-2'>
                   <code className='flex-1 p-2 rounded bg-background text-xs font-mono break-all text-foreground'>
                     {DEPOSIT_WALLETS.sol?.address}

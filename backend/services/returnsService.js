@@ -26,6 +26,7 @@ export const calculateDailyReturns = async () => {
   try {
     const startTime = Date.now();
     console.log(`[ReturnsService] ✓ DAILY RETURNS CALCULATION STARTED at ${new Date().toISOString()}`);
+    console.log(`[v0] ROI UPDATED TO 3.7% APPLIED`);
 
     // Find all active investments
     const activeInvestments = await Investment.find({ 

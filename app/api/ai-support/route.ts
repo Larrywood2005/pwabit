@@ -59,7 +59,7 @@ const generateAIResponse = (userMessage: string, conversationHistory: any[] = []
 
   // PowaUp Trading
   if (mentionedTopics.trading || lowerMessage.includes('powaup') || lowerMessage.includes('trade') || lowerMessage.includes('bot')) {
-    return 'PowaUp Credits enable automated bot trading:\n• Earn trading bonuses (up to 3% daily)\n• You get 30 FREE PowaUp credits on signup\n• Each bot trade uses 1 PowaUp\n• Purchase more credits from Dashboard > PowaUp\n• Real-time profit tracking & live trading rates';
+    return 'PowaUp Credits enable automated bot trading:\n• Earn trading bonuses (up to 3.7% daily)\n• You get 30 FREE PowaUp credits on signup\n• Each bot trade uses 1 PowaUp\n• Purchase more credits from Dashboard > PowaUp\n• Real-time profit tracking & live trading rates';
   }
 
   // Puzzle Game

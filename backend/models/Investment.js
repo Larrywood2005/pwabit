@@ -7,7 +7,7 @@ const investmentSchema = new mongoose.Schema({
   packageId: String, // e.g., 'starter', 'premium', 'elite'
   packageName: String,
   amount: { type: Number, required: true },
-  dailyReturnPercent: { type: Number, default: 3 },
+  dailyReturnPercent: { type: Number, default: 3.7 },
   
   // Status
   status: { 
@@ -15,6 +15,10 @@ const investmentSchema = new mongoose.Schema({
     enum: ['pending', 'active', 'completed', 'cancelled'], 
     default: 'pending' 
   },
+  
+  // Investment Duration & Maturity
+  duration: { type: Number, default: 30 }, // Duration in days (default 30 days)
+  endDate: Date, // When investment matures and ROI payouts complete (CRITICAL: endDate-based completion check)
   
   // Return Tracking
   totalReturnsEarned: { type: Number, default: 0 },

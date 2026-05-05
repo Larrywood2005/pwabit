@@ -7,12 +7,12 @@ import balanceService from '../services/balanceService.js';
 
 const router = express.Router();
 
-// Investment packages - Daily return rate is 3% per day
-// Calculation: Amount * 0.03 = Daily return (not doubled, exactly 3%)
+// Investment packages - Daily return rate is 3.7% per day
+// Calculation: Amount * 0.037 = Daily return (exactly 3.7%)
 const packages = {
-  starter: { name: 'Starter', minAmount: 10, maxAmount: 999, dailyReturn: 3 },
-  premium: { name: 'Premium', minAmount: 1000, maxAmount: 4999, dailyReturn: 3 },
-  elite: { name: 'Elite', minAmount: 5000, maxAmount: null, dailyReturn: 3 }
+  starter: { name: 'Starter', minAmount: 10, maxAmount: 999, dailyReturn: 3.7 },
+  premium: { name: 'Premium', minAmount: 1000, maxAmount: 4999, dailyReturn: 3.7 },
+  elite: { name: 'Elite', minAmount: 5000, maxAmount: null, dailyReturn: 3.7 }
 };
 
 // Create investment
