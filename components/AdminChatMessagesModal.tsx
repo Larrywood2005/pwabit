@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { MessageCircle, X, CheckCircle, Clock, Image as ImageIcon } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { MessageCircle, X, CheckCircle, Clock, Image as ImageIcon, Wifi, WifiOff } from 'lucide-react';
+import { useSocket } from '@/hooks/useSocket';
 
 interface ChatMessage {
   _id: string;
@@ -14,6 +15,7 @@ interface ChatMessage {
   hasImage: boolean;
   isResolved: boolean;
   timestamp: string;
+  sender?: string;
 }
 
 interface AdminChatMessagesModalProps {
@@ -21,11 +23,66 @@ interface AdminChatMessagesModalProps {
 }
 
 export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps) {
+  const { socket, connected } = useSocket();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
+  const initialLoadRef = useRef(false);
+
+  // Join admin room on socket connection
+  useEffect(() => {
+    if (socket && connected) {
+      console.log('[v0] Socket connected, joining admin-messages room');
+      socket.emit('join-admin', 'admin-panel');
+      
+      // Listen for new messages in real-time
+      socket.on('new-message', (newMessage: ChatMessage) => {
+        console.log('[v0] Real-time message received:', newMessage);
+        setMessages(prev => {
+          // Prevent duplicates
+          if (prev.some(m => m._id === newMessage._id)) {
+            return prev;
+          }
+          return [newMessage, ...prev];
+        });
+      });
+
+      // Listen for message updates
+      socket.on('message-updated', (update: any) => {
+        console.log('[v0] Message updated:', update);
+        setMessages(prev =>
+          prev.map(m => 
+            m._id === update.messageId 
+              ? { ...m, isResolved: true }
+              : m
+          )
+        );
+      });
+
+      return () => {
+        socket.off('new-message');
+        socket.off('message-updated');
+      };
+    }
+  }, [socket, connected]);
+
+  // Initial load and polling fallback
+  useEffect(() => {
+    if (!initialLoadRef.current) {
+      initialLoadRef.current = true;
+      fetchMessages();
+    }
+  }, []);
+
+  // Polling fallback if socket is not connected
+  useEffect(() => {
+    if (!connected) {
+      const pollInterval = setInterval(fetchMessages, 5000);
+      return () => clearInterval(pollInterval);
+    }
+  }, [connected]);
 
   useEffect(() => {
     fetchMessages();
@@ -33,16 +90,16 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
 
   const fetchMessages = async () => {
     try {
-      setLoading(true);
+      if (loading === true && messages.length === 0) {
+        // Only show loading on initial fetch
+      } else {
+        // Silent refresh on background polls
+      }
+      
       setError('');
       
-      console.log('[DEBUG - AdminChatMessagesModal]', {
-        fetching: true,
-        unreadOnly: unreadOnly,
-        url: `/api/admin/chat-messages?unreadOnly=${unreadOnly}&limit=100`
-      });
+      console.log('[v0] Fetching chat messages:', { unreadOnly, socketConnected: connected });
       
-      // Get auth token from localStorage
       const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
       
       const response = await fetch(`/api/admin/chat-messages?unreadOnly=${unreadOnly}&limit=100`, {
@@ -54,7 +111,6 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
         credentials: 'include'
       });
       
-      // Check if response is ok and is JSON
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[v0] Chat API error response:', {
@@ -67,7 +123,6 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
         return;
       }
 
-      // Verify content type is JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         console.error('[v0] Invalid content type:', contentType);
@@ -76,24 +131,21 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
         return;
       }
 
-      // Parse JSON safely
       let data;
       try {
         const responseText = await response.text();
         data = JSON.parse(responseText);
       } catch (parseError) {
         console.error('[v0] JSON parse error:', parseError);
-        console.error('[v0] Response text:', await response.text());
         setError('Failed to parse server response');
         setLoading(false);
         return;
       }
       
-      console.log('[DEBUG - AdminChatMessagesModal Response]', {
+      console.log('[v0] Messages fetched successfully:', {
         success: data.success,
         messagesCount: data.messages?.length || 0,
-        total: data.total,
-        error: data.error
+        total: data.total
       });
       
       if (data.success) {
@@ -103,7 +155,7 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
       }
     } catch (err) {
       console.error('[v0] Error fetching messages:', err);
-      setError('Failed to load messages - ' + (err instanceof Error ? err.message : String(err)));
+      setError('Failed to load messages');
     } finally {
       setLoading(false);
     }
@@ -111,7 +163,6 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
 
   const handleMarkResolved = async (messageId: string) => {
     try {
-      // Get auth token from localStorage
       const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
       
       const response = await fetch('/api/admin/chat-messages', {
@@ -129,6 +180,7 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
           prev.map(m => m._id === messageId ? { ...m, isResolved: true } : m)
         );
         setSelectedMessage(null);
+        console.log('[v0] Message marked as resolved:', messageId);
       }
     } catch (err) {
       console.error('[v0] Error updating message:', err);
@@ -146,6 +198,19 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
             <h2 className='text-2xl font-bold text-foreground flex items-center gap-2'>
               <MessageCircle size={24} />
               User Messages
+              <span className='flex items-center gap-1 text-sm font-normal text-muted-foreground ml-2'>
+                {connected ? (
+                  <>
+                    <Wifi size={16} className='text-green-600' />
+                    Real-time connected
+                  </>
+                ) : (
+                  <>
+                    <WifiOff size={16} className='text-yellow-600' />
+                    Polling (socket disconnected)
+                  </>
+                )}
+              </span>
             </h2>
             <p className='text-sm text-muted-foreground mt-1'>
               {unreadCount} unread • {messages.length} total
@@ -208,19 +273,22 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
                         <p className='text-xs text-muted-foreground truncate'>
                           {msg.userEmail}
                         </p>
-                        <p className='text-xs text-muted-foreground mt-1'>
-                          {msg.message?.substring(0, 50) || '[Image only]'}
-                          {msg.message && msg.message.length > 50 ? '...' : ''}
+                        <p className='text-xs text-muted-foreground mt-1 flex items-center gap-1'>
+                          <span className='inline-block px-1.5 py-0.5 bg-blue-600/20 text-blue-600 rounded text-[10px] font-semibold'>
+                            {msg.sender || 'user'}
+                          </span>
+                          {msg.message?.substring(0, 40) || '[Image only]'}
+                          {msg.message && msg.message.length > 40 ? '...' : ''}
                         </p>
                       </div>
-                      <div className='flex-shrink-0'>
+                      <div className='flex-shrink-0 flex flex-col gap-1'>
                         {msg.isResolved ? (
                           <CheckCircle size={16} className='text-green-600' />
                         ) : (
                           <Clock size={16} className='text-yellow-600' />
                         )}
                         {msg.hasImage && (
-                          <ImageIcon size={14} className='text-blue-600 mt-1' />
+                          <ImageIcon size={14} className='text-blue-600' />
                         )}
                       </div>
                     </div>
@@ -238,8 +306,11 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
                   <h3 className='font-bold text-lg text-foreground mb-2'>
                     {selectedMessage.userName}
                   </h3>
-                  <p className='text-sm text-muted-foreground mb-4'>
+                  <p className='text-sm text-muted-foreground mb-2'>
                     {selectedMessage.userEmail}
+                  </p>
+                  <p className='text-xs text-muted-foreground mb-2'>
+                    Source: <span className='font-semibold capitalize'>{selectedMessage.sender || 'user'}</span>
                   </p>
                   <p className='text-xs text-muted-foreground'>
                     {new Date(selectedMessage.timestamp).toLocaleString()}

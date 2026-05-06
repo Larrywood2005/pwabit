@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, X, Minimize2, Maximize2, Upload, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSocket } from '@/hooks/useSocket';
 
 interface Message {
   id: string;
@@ -15,6 +16,7 @@ interface Message {
 
 export function AICustomerSupport() {
   const { user } = useAuth();
+  const { socket } = useSocket();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -75,6 +77,13 @@ export function AICustomerSupport() {
       return;
     }
 
+    console.log('[v0] Sending AI support message:', {
+      userId: user.id,
+      userName: user.fullName,
+      hasText: !!inputValue.trim(),
+      hasImage: !!selectedImage
+    });
+
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -91,8 +100,10 @@ export function AICustomerSupport() {
     setIsLoading(true);
 
     try {
-      // Save message to database for admin viewing via admin messages API
+      // Save message to admin dashboard via chat API
       const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+      
+      console.log('[v0] Saving AI support message to admin dashboard...');
       
       const saveResponse = await fetch('/api/admin/chat-messages', {
         method: 'POST',
@@ -108,17 +119,19 @@ export function AICustomerSupport() {
           message: inputValue || '[User sent an image]',
           image: selectedImage?.preview || undefined,
           hasText: !!inputValue.trim(),
-          hasImage: !!selectedImage
+          hasImage: !!selectedImage,
+          subject: 'AI Support'
         })
       });
 
       if (!saveResponse.ok) {
-        console.warn('[v0] Failed to save message to admin dashboard');
+        console.warn('[v0] Failed to save message to admin dashboard:', saveResponse.status);
       } else {
         console.log('[v0] Message saved to admin dashboard successfully');
       }
 
       // Get AI response
+      console.log('[v0] Requesting AI response...');
       const aiResponse = await fetch('/api/ai-support', {
         method: 'POST',
         headers: {
@@ -129,7 +142,10 @@ export function AICustomerSupport() {
           conversationHistory: messages.map(m => ({ 
             type: m.type, 
             text: m.text || '[Image message]'
-          }))
+          })),
+          userId: user.id,
+          userName: user.fullName || 'User',
+          userEmail: user.email || 'unknown@email.com'
         })
       });
 
@@ -138,6 +154,7 @@ export function AICustomerSupport() {
       
       if (data && data.reply) {
         replyText = data.reply;
+        console.log('[v0] AI response received:', replyText.substring(0, 100));
       }
 
       const botMessage: Message = {
@@ -148,6 +165,19 @@ export function AICustomerSupport() {
       };
 
       setMessages(prev => [...prev, botMessage]);
+      
+      // Emit socket event to admin if available
+      if (socket) {
+        console.log('[v0] Emitting AI support message to admin via socket');
+        socket.emit('new-ai-message', {
+          userId: user.id,
+          userName: user.fullName,
+          userEmail: user.email,
+          message: inputValue,
+          sender: 'ai-support',
+          timestamp: new Date()
+        });
+      }
     } catch (error) {
       console.error('[v0] Error in chat:', error);
       const fallbackMessage: Message = {
