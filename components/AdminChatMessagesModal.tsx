@@ -23,7 +23,7 @@ interface AdminChatMessagesModalProps {
 }
 
 export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps) {
-  const { socket, connected } = useSocket();
+  const { socket, isConnected } = useSocket();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,7 +33,7 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
 
   // Join admin room on socket connection
   useEffect(() => {
-    if (socket && connected) {
+    if (socket && isConnected) {
       console.log('[v0] Socket connected, joining admin-messages room');
       socket.emit('join-admin', 'admin-panel');
       
@@ -66,7 +66,7 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
         socket.off('message-updated');
       };
     }
-  }, [socket, connected]);
+  }, [socket, isConnected]);
 
   // Initial load and polling fallback
   useEffect(() => {
@@ -78,11 +78,11 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
 
   // Polling fallback if socket is not connected
   useEffect(() => {
-    if (!connected) {
+    if (!isConnected) {
       const pollInterval = setInterval(fetchMessages, 5000);
       return () => clearInterval(pollInterval);
     }
-  }, [connected]);
+  }, [isConnected]);
 
   useEffect(() => {
     fetchMessages();
@@ -98,7 +98,7 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
       
       setError('');
       
-      console.log('[v0] Fetching chat messages:', { unreadOnly, socketConnected: connected });
+      console.log('[v0] Fetching chat messages:', { unreadOnly, socketConnected: isConnected });
       
       const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
       
@@ -199,7 +199,7 @@ export function AdminChatMessagesModal({ onClose }: AdminChatMessagesModalProps)
               <MessageCircle size={24} />
               User Messages
               <span className='flex items-center gap-1 text-sm font-normal text-muted-foreground ml-2'>
-                {connected ? (
+                {isConnected ? (
                   <>
                     <Wifi size={16} className='text-green-600' />
                     Real-time connected
