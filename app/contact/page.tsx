@@ -87,7 +87,7 @@ export default function ContactPage() {
             {
               icon: Mail,
               title: 'Email',
-              content: 'support@powabitz.com',
+              content: 'powabitz@outlook.com',
               desc: 'We reply within 24 hours'
             },
             {
