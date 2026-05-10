@@ -593,8 +593,13 @@ router.post('/confirm-deposit/:transactionId', authenticate, authorize(['super_a
       if (user) {
         const balanceBefore = user.currentBalance || 0;
         
+        // CRITICAL: Ensure we're using SAFE ARITHMETIC
+        // The deduction should only apply the investment amount, preserving all other balance
         user.totalInvested = (user.totalInvested || 0) + transaction.amount;
-        user.currentBalance = Math.max(0, (user.currentBalance || 0) - transaction.amount);
+        
+        // Use safe arithmetic: subtract only the investment amount
+        const newBalance = Math.max(0, balanceBefore - transaction.amount);
+        user.currentBalance = newBalance;
 
         // Save user changes
         const savedUser = await user.save();
@@ -603,9 +608,15 @@ router.post('/confirm-deposit/:transactionId', authenticate, authorize(['super_a
           userId: savedUser._id.toString(),
           investmentAmount: transaction.amount,
           balanceBefore: balanceBefore,
+          change: `-${transaction.amount}`,
           balanceAfter: savedUser.currentBalance,
           totalInvested: savedUser.totalInvested,
-          message: 'Investment confirmed - balance deducted from currentBalance'
+          message: 'Investment confirmed - balance deducted from currentBalance using SAFE ARITHMETIC',
+          validation: {
+            expectedAfter: balanceBefore - transaction.amount,
+            actualAfter: savedUser.currentBalance,
+            matches: (balanceBefore - transaction.amount) === savedUser.currentBalance
+          }
         });
 
         // ========== REFERRAL COMMISSION DISTRIBUTION ==========
@@ -1222,6 +1233,109 @@ router.put('/withdrawals/:id/status', authenticate, authorize(['super_admin', 'a
   }
 });
 
+
+// CRITICAL AUDIT ENDPOINT: Balance Consistency Check
+// Verifies that all user balances are consistent and haven't been corrupted
+router.get('/audit/balance-integrity', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {
+  try {
+    const { userId, page = 1, limit = 50 } = req.query;
+    
+    console.log('[AUDIT] Starting balance integrity check', { userId, page, limit });
+    
+    let query = userId ? { _id: userId } : {};
+    const skip = (page - 1) * limit;
+    
+    const users = await User.find(query)
+      .select('_id fullName email currentBalance totalDeposited totalWithdrawn totalInvested totalEarnings')
+      .skip(skip)
+      .limit(limit);
+    
+    const total = await User.countDocuments(query);
+    
+    // Audit each user's balance
+    const auditResults = await Promise.all(users.map(async (user) => {
+      try {
+        // Get actual balance info from balanceService
+        const balanceInfo = await balanceService.calculateAvailableBalance(user._id);
+        
+        // Get all transactions for verification
+        const transactions = await Transaction.find({ userId: user._id });
+        const deposits = transactions.filter(t => t.type === 'deposit' && t.status === 'confirmed').reduce((sum, t) => sum + (t.amount || 0), 0);
+        const withdrawals = transactions.filter(t => t.type === 'withdrawal' && t.status === 'completed').reduce((sum, t) => sum + (t.amount || 0), 0);
+        
+        // Calculate expected balance from transactions
+        const expectedBalance = deposits - withdrawals + (user.totalEarnings || 0);
+        
+        // Check for discrepancies
+        const hasDiscrepancy = Math.abs(expectedBalance - (user.currentBalance || 0)) > 0.01;
+        
+        return {
+          userId: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          currentBalance: Math.max(0, user.currentBalance || 0),
+          expectedBalance: Math.max(0, expectedBalance),
+          discrepancy: user.currentBalance - expectedBalance,
+          hasDiscrepancy: hasDiscrepancy,
+          balanceInfo: {
+            totalBalance: balanceInfo.totalBalance,
+            availableBalance: balanceInfo.availableBalance,
+            lockedInTrades: balanceInfo.lockedInTrades,
+            pendingWithdrawal: balanceInfo.pendingWithdrawal
+          },
+          transactionSummary: {
+            confirmedDeposits: deposits,
+            completedWithdrawals: withdrawals,
+            totalEarnings: user.totalEarnings || 0
+          },
+          status: hasDiscrepancy ? 'ALERT' : 'OK'
+        };
+      } catch (err) {
+        console.error('[AUDIT] Error checking user balance:', user._id, err.message);
+        return {
+          userId: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          status: 'ERROR',
+          error: err.message
+        };
+      }
+    }));
+    
+    // Summary statistics
+    const withDiscrepancies = auditResults.filter(r => r.hasDiscrepancy).length;
+    const withErrors = auditResults.filter(r => r.status === 'ERROR').length;
+    
+    console.log('[AUDIT] Balance integrity check complete', {
+      totalUsers: total,
+      checkedUsers: auditResults.length,
+      withDiscrepancies: withDiscrepancies,
+      withErrors: withErrors,
+      timestamp: new Date()
+    });
+    
+    res.json({
+      summary: {
+        totalUsers: total,
+        checkedUsers: auditResults.length,
+        usersWithDiscrepancies: withDiscrepancies,
+        usersWithErrors: withErrors,
+        timestamp: new Date(),
+        message: withDiscrepancies > 0 ? '⚠️ ALERT: Some users have balance discrepancies!' : '✓ All balances are consistent'
+      },
+      users: auditResults,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('[AUDIT] Balance integrity check failed:', error);
+    res.status(500).json({ message: 'Balance audit failed', error: error.message });
+  }
+});
 
 // Get pending KYC
 router.get('/kyc/pending', authenticate, authorize(['super_admin', 'admin']), async (req, res) => {

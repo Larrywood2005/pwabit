@@ -64,8 +64,26 @@ export const createTransaction = async (userId, type, amount, options = {}) => {
     });
     await transaction.save();
 
-    // Update user balance
-    user.currentBalance = balanceAfter;
+    // CRITICAL FIX: Use safe arithmetic instead of overwriting balance
+    // This ensures we don't lose existing balance when processing transactions
+    // Store balance BEFORE for logging
+    const safeBalanceBefore = user.currentBalance;
+    
+    // Apply change safely using arithmetic
+    if (creditTypes.includes(type)) {
+      user.currentBalance = (user.currentBalance || 0) + amount;
+    } else if (debitTypes.includes(type)) {
+      user.currentBalance = Math.max(0, (user.currentBalance || 0) - amount);
+    }
+
+    console.log('[BALANCE UPDATE - transactionService]', {
+      userId: userId.toString(),
+      before: safeBalanceBefore,
+      change: creditTypes.includes(type) ? `+${amount}` : `-${amount}`,
+      after: user.currentBalance,
+      operation: type,
+      transactionId: transaction._id
+    });
 
     // Update type-specific totals
     if (type === 'deposit') {
