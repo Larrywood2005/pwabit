@@ -7,7 +7,7 @@ import { SignalFilters } from '@/components/signals/SignalFilters';
 import { SubscriptionGate } from '@/components/signals/SubscriptionGate';
 
 export default function SignalsPage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [signals, setSignals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ tradingPair: null, page: 1 });
@@ -26,7 +26,7 @@ export default function SignalsPage() {
         }
 
         const response = await fetch(`/api/signals/published?${params}`, {
-          headers: { Authorization: `Bearer ${user?.token}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
 
         if (!response.ok) throw new Error('Failed to fetch signals');
@@ -41,14 +41,14 @@ export default function SignalsPage() {
       }
     };
 
-    if (user?.token) fetchSignals();
-  }, [filters, user?.token]);
+    if (token) fetchSignals();
+  }, [filters, token]);
 
   useEffect(() => {
     const fetchSubscriptions = async () => {
       try {
         const response = await fetch('/api/signals/my/subscriptions', {
-          headers: { Authorization: `Bearer ${user?.token}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
 
         if (!response.ok) throw new Error('Failed to fetch subscriptions');
@@ -60,8 +60,8 @@ export default function SignalsPage() {
       }
     };
 
-    if (user?.token) fetchSubscriptions();
-  }, [user?.token]);
+    if (token) fetchSubscriptions();
+  }, [token]);
 
   return (
     <div className="min-h-screen bg-background p-6">
