@@ -506,7 +506,7 @@ router.post('/reject-deposit/:transactionId', authenticate, authorize(['super_ad
     if (router.io) {
       try {
         // Notify user about rejection
-        router.io.to(transaction.userId.toString()).emit('deposit-rejected', {
+        router.io.to(`user_${transaction.userId.toString()}`).emit('deposit-rejected', {
           transactionId: transaction._id,
           amount: transaction.amount,
           reason: transaction.rejectionReason,

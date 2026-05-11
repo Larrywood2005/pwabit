@@ -352,12 +352,16 @@ import gameRoutes, { setSocketIO as setGameSocketIO } from './routes/games.js';
 import walletAddressRoutes, { setSocketIO as setWalletAddressSocketIO } from './routes/wallet-addresses.js';
 import powaupRoutes from './routes/powaup.js';
 import giveawayRoutes from './routes/giveaway.js';
+import signalsRoutes, { setSocketIO as setSignalsSocketIO } from './routes/signals.js';
+import adminSignalsRoutes, { setSocketIO as setAdminSignalsSocketIO } from './routes/admin-signals.js';
 
 // Initialize Socket.io for routes
 setWalletSocketIO(io);
 setAdminSocketIO(io);
 setWalletAddressSocketIO(io);
 setGameSocketIO(io);
+setSignalsSocketIO(io);
+setAdminSignalsSocketIO(io);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -388,6 +392,7 @@ app.get('/api/status', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/investments', investmentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin/signals', adminSignalsRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/wallets', walletRoutes);
 app.use('/api/kyc', kycRoutes);
@@ -395,6 +400,7 @@ app.use('/api/games', gameRoutes);
 app.use('/api/wallet-addresses', walletAddressRoutes);
 app.use('/api/powaup', powaupRoutes);
 app.use('/api/giveaway', giveawayRoutes);
+app.use('/api/signals', signalsRoutes);
 
 // Start real-time services
 import { startPriceUpdates } from './services/cryptoService.js';
