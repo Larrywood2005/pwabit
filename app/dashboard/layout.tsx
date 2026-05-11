@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, X, LogOut, Home, TrendingUp, Activity, Settings, Wallet, Gamepad2 } from 'lucide-react';
+import { Menu, X, LogOut, Home, TrendingUp, Activity, Settings, Wallet, Gamepad2, BarChart3 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { getAvatarUrl } from '@/hooks/useDefaultAvatar';
 import NotificationBell from '@/components/NotificationBell';
@@ -37,6 +37,7 @@ export default function DashboardLayout({
     { icon: Home, label: 'Overview', href: '/dashboard' },
     { icon: TrendingUp, label: 'Trading', href: '/dashboard/trading' },
     { icon: TrendingUp, label: 'Investments', href: '/dashboard/investments' },
+    { icon: BarChart3, label: 'Signals', href: '/dashboard/signals' },
     { icon: Wallet, label: 'Wallet', href: '/dashboard/wallet' },
     { icon: Gamepad2, label: 'Games', href: '/dashboard/games' },
     { icon: Activity, label: 'Activities', href: '/dashboard/activities' },

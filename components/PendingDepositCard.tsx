@@ -146,40 +146,43 @@ export function PendingDepositCard({ investment, onConfirm, onReject, isProcessi
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className='border-t border-border pt-4 flex gap-3'>
-              <button
-                onClick={() => onConfirm(investment._id)}
-                disabled={isProcessing}
-                className='flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors disabled:opacity-50'
-              >
-                <CheckCircle size={18} />
-                Confirm & Activate
-              </button>
-              <button
-                onClick={() => {
-                  if (onReject && rejectReason) {
-                    onReject(investment._id, rejectReason);
-                  }
-                }}
-                disabled={isProcessing || !rejectReason}
-                className='flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-50'
-              >
-                <XCircle size={18} />
-                Reject
-              </button>
-            </div>
-
             {/* Reject Reason Input */}
-            <div>
-              <label className='text-xs font-semibold text-muted-foreground mb-1 block'>Rejection Reason (if rejecting)</label>
+            <div className='border-t border-border pt-4'>
+              <label className='text-xs font-semibold text-muted-foreground mb-2 block'>Rejection Reason (required if rejecting)</label>
               <textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder='Enter reason for rejection...'
+                placeholder='Enter detailed reason for rejection (will be sent to user)...'
                 className='w-full px-3 py-2 rounded-lg bg-background border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary text-sm'
-                rows={2}
+                rows={3}
               />
+              {rejectReason && (
+                <p className='text-xs text-green-600 mt-1'>✓ Reason provided - Reject button is now active</p>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className='flex gap-3'>
+              <button
+                onClick={() => onConfirm(investment._id)}
+                disabled={isProcessing}
+                className='flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+              >
+                <CheckCircle size={18} />
+                {isProcessing ? 'Processing...' : 'Confirm & Activate'}
+              </button>
+              <button
+                onClick={() => {
+                  if (rejectReason.trim()) {
+                    onReject?.(investment._id, rejectReason.trim());
+                  }
+                }}
+                disabled={isProcessing || !rejectReason.trim()}
+                className='flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+              >
+                <XCircle size={18} />
+                {isProcessing ? 'Processing...' : 'Reject'}
+              </button>
             </div>
           </div>
         )}

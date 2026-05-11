@@ -48,7 +48,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [activeTab, setActiveTab] = useState<'overview' | 'deposits' | 'receipts' | 'kyc' | 'games' | 'withdrawals' | 'users'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'deposits' | 'receipts' | 'kyc' | 'games' | 'withdrawals' | 'users' | 'signals'>('overview');
   const [processingTransactions, setProcessingTransactions] = useState<{[key: string]: boolean}>({});
   const [paymentReceipts, setPaymentReceipts] = useState<any[]>([]);
   const [gameRewards, setGameRewards] = useState<any[]>([]);
@@ -69,6 +69,8 @@ export default function AdminDashboard() {
   const [showGrantUSD, setShowGrantUSD] = useState(false);
   const [showChatMessages, setShowChatMessages] = useState(false);
   const [selectedWithdrawalForModal, setSelectedWithdrawalForModal] = useState<any>(null);
+  const [signals, setSignals] = useState<any[]>([]);
+  const [signalForm, setSignalForm] = useState({ symbol: '', entryLevel: '', exitLevel: '', riskReward: '', status: 'active' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -644,6 +646,21 @@ export default function AdminDashboard() {
             {(flaggedUsers.length + suspendedUsers.length + deletedUsers.length) > 0 && (
               <span className='px-1.5 md:px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-600 text-[10px] md:text-xs font-bold'>
                 {flaggedUsers.length + suspendedUsers.length + deletedUsers.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab('signals')}
+            className={`px-3 md:px-6 py-2 md:py-3 text-xs md:text-base font-semibold border-b-2 transition-colors flex items-center gap-1 md:gap-2 whitespace-nowrap ${
+              activeTab === 'signals'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Signals
+            {signals.length > 0 && (
+              <span className='px-1.5 md:px-2 py-0.5 rounded-full bg-green-500/20 text-green-600 text-[10px] md:text-xs font-bold'>
+                {signals.length}
               </span>
             )}
           </button>
@@ -1819,6 +1836,92 @@ export default function AdminDashboard() {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* SIGNALS TAB */}
+      {activeTab === 'signals' && (
+        <div className='rounded-lg bg-card border border-border'>
+          <div className='p-4 md:p-6 border-b border-border'>
+            <h2 className='text-base md:text-xl font-bold text-foreground flex items-center gap-2'>
+              <TrendingUp className='text-primary w-4 h-4 md:w-5 md:h-5' />
+              Trading Signals Management
+            </h2>
+            <p className='text-xs md:text-sm text-muted-foreground mt-1'>
+              Create and manage trading signals for users. Signals are published in real-time to subscribed users.
+            </p>
+          </div>
+
+          {/* Create Signal Form */}
+          <div className='p-4 md:p-6 border-b border-border bg-muted/20'>
+            <h3 className='font-semibold text-foreground mb-4'>Create New Signal</h3>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-4'>
+              <input
+                type='text'
+                placeholder='Trading Pair (e.g., BTC/USDT)'
+                value={signalForm.symbol}
+                onChange={(e) => setSignalForm({...signalForm, symbol: e.target.value})}
+                className='px-3 md:px-4 py-2 rounded bg-background border border-border text-foreground text-sm'
+              />
+              <input
+                type='number'
+                placeholder='Entry Level ($)'
+                value={signalForm.entryLevel}
+                onChange={(e) => setSignalForm({...signalForm, entryLevel: e.target.value})}
+                className='px-3 md:px-4 py-2 rounded bg-background border border-border text-foreground text-sm'
+              />
+              <input
+                type='number'
+                placeholder='Exit Level ($)'
+                value={signalForm.exitLevel}
+                onChange={(e) => setSignalForm({...signalForm, exitLevel: e.target.value})}
+                className='px-3 md:px-4 py-2 rounded bg-background border border-border text-foreground text-sm'
+              />
+              <input
+                type='text'
+                placeholder='Risk/Reward Ratio (e.g., 1:3)'
+                value={signalForm.riskReward}
+                onChange={(e) => setSignalForm({...signalForm, riskReward: e.target.value})}
+                className='px-3 md:px-4 py-2 rounded bg-background border border-border text-foreground text-sm'
+              />
+            </div>
+            <button className='px-4 md:px-6 py-2 bg-primary text-white rounded font-semibold hover:bg-primary/90 transition-all text-sm'>
+              Publish Signal
+            </button>
+          </div>
+
+          {/* Active Signals */}
+          <div className='p-4 md:p-6'>
+            {signals.length > 0 ? (
+              <div className='space-y-3 md:space-y-4'>
+                {signals.map((signal: any) => (
+                  <div key={signal._id} className='p-3 md:p-4 bg-muted/30 border border-border rounded-lg'>
+                    <div className='flex items-start justify-between mb-2'>
+                      <div>
+                        <p className='font-semibold text-foreground text-sm md:text-base'>{signal.symbol}</p>
+                        <p className='text-xs text-muted-foreground'>Entry: ${signal.entryLevel} • Exit: ${signal.exitLevel}</p>
+                      </div>
+                      <span className='px-2 py-1 rounded-full bg-green-500/20 text-green-600 text-[10px] font-semibold'>
+                        {signal.subscribers || 0} Subscribers
+                      </span>
+                    </div>
+                    <div className='flex gap-2'>
+                      <button className='flex-1 px-2 py-1 bg-blue-500/20 text-blue-600 hover:bg-blue-500/30 rounded text-xs font-semibold transition-all'>
+                        Edit
+                      </button>
+                      <button className='flex-1 px-2 py-1 bg-red-500/20 text-red-600 hover:bg-red-500/30 rounded text-xs font-semibold transition-all'>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className='p-6 text-center text-muted-foreground text-sm'>
+                No signals created yet. Create your first signal above.
+              </div>
+            )}
           </div>
         </div>
       )}
