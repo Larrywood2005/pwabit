@@ -18,11 +18,12 @@ export default function SignalsPage() {
     const fetchSignals = async () => {
       try {
         setLoading(true);
-        const params = new URLSearchParams({
-          page: filters.page.toString(),
-          limit: '20',
-          ...(filters.tradingPair && { tradingPair: filters.tradingPair })
-        });
+        const params = new URLSearchParams();
+        params.append('page', filters.page.toString());
+        params.append('limit', '20');
+        if (filters.tradingPair) {
+          params.append('tradingPair', filters.tradingPair);
+        }
 
         const response = await fetch(`/api/signals/published?${params}`, {
           headers: { Authorization: `Bearer ${user?.token}` }
